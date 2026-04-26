@@ -4,7 +4,7 @@
       :token="token"
       :userInfo="profile"
       @search="handleSearch"
-      @openAuth="switchView('auth')"
+      @openAuth="openAuthDialog('login')"
       @logout="logout"
       @goOrders="switchView('orders')"
       @goProfile="switchView('profile')"
@@ -33,8 +33,6 @@
 
         <!-- 中间主内容 -->
         <div class="main col">
-
-
           <ItemList
               :items="items"
               :title="listTitle"
@@ -50,7 +48,6 @@
               <button class="btn" @click="loadRecs" :disabled="!token">刷新推荐</button>
             </div>
 
-            <!-- 推荐商品卡片展示 -->
             <div style="padding: 12px 14px; display:flex; flex-wrap:wrap; gap:10px;">
               <div
                   v-for="r in recs"
@@ -59,14 +56,19 @@
                   style="cursor:pointer; width:200px; height:300px; border:1px solid #ddd; border-radius:8px; text-align:center;"
                   @click="openDetail(r.id)"
               >
-                <img :src="r.coverImageUrl" alt="商品封面" style="width:100%; height:150px; object-fit:cover; border-radius:8px;" />
+                <img
+                    :src="r.coverImageUrl"
+                    alt="商品封面"
+                    style="width:100%; height:150px; object-fit:cover; border-radius:8px;"
+                />
                 <div class="card-content" style="padding:10px;">
                   <h3>{{ r.title }}</h3>
                   <p>¥ {{ r.price }}</p>
                 </div>
               </div>
+
               <div v-if="recs.length === 0" style="color:#888;">
-                暂无推荐（多浏览几个帖子试试）
+                暂无推荐（登录并多浏览几个帖子试试）
               </div>
             </div>
 
@@ -92,6 +94,7 @@
     </div>
   </template>
 
+  <!-- 发布商品 -->
   <div v-if="currentView === 'post'" class="container page-section">
     <div class="page-title">发布商品</div>
 
@@ -173,6 +176,7 @@
           >
             {{ isEditMode ? '保存修改' : '立即发布' }}
           </button>
+
           <button
               v-if="isEditMode"
               class="btn"
@@ -180,6 +184,7 @@
           >
             取消编辑
           </button>
+
           <button class="btn" @click="resetPostForm">清空内容</button>
         </div>
 
@@ -399,6 +404,7 @@
     </div>
   </div>
 
+  <!-- 我的发布 -->
   <div v-if="currentView === 'myItems'" class="container page-section">
     <div class="page-title">我的发布</div>
 
@@ -426,7 +432,6 @@
                 商品状态：{{ item.status }}
               </div>
             </div>
-
 
             <div class="panel-actions">
               <button class="btn" @click="openEditItem(item)">编辑</button>
@@ -498,9 +503,9 @@
               <button
                   class="btn primary"
                   @click="doCreateOrder(detail?.id)"
-                  :disabled="!token || !detail || detail.status !== 'AVAILABLE'"
+                  :disabled="!detail || detail.status !== 'AVAILABLE'"
               >
-                下单
+                {{ token ? '下单' : '登录后下单' }}
               </button>
             </div>
           </div>
@@ -561,6 +566,7 @@
           >
             我已完成支付
           </button>
+
           <button
               class="btn"
               @click="doCancelOrder(payOrderInfo.id)"
@@ -577,18 +583,21 @@
 
   <AiChatWidget @openDetail="openDetail" />
 
-  <!-- 登录弹层 -->
-  <div v-if="currentView === 'auth'" class="container page-section">
-    <div style="max-width: 460px; margin: 0 auto;">
-      <div class="hero-card" style="margin-bottom: 16px;">
-        <div class="hero-title">欢迎来到校园二手论坛</div>
-        <div class="hero-desc">登录后可发布商品、下单、管理订单与完善个人资料。</div>
+  <!-- 登录弹窗：未登录下单、点击登录/注册时显示 -->
+  <div
+      v-if="showAuthDialog"
+      style="position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:60; padding:16px;"
+  >
+    <div class="card" style="width:460px; max-width: calc(100vw - 24px);">
+      <div class="list-head">
+        <div class="title">{{ authMode === 'login' ? '用户登录' : '用户注册' }}</div>
+        <button class="btn" @click="closeAuthDialog">关闭</button>
       </div>
 
-      <div class="card">
-        <div class="list-head">
-          <div class="title">{{ authMode === 'login' ? '用户登录' : '用户注册' }}</div>
-          <button class="btn" @click="switchView('home')">返回首页</button>
+      <div style="padding:14px;">
+        <div class="hero-card" style="margin-bottom:16px;">
+          <div class="hero-title">欢迎来到校园二手论坛</div>
+          <div class="hero-desc">未登录也可以浏览商品；发布商品、下单和管理订单需要先登录。</div>
         </div>
 
         <div class="form">
@@ -596,14 +605,15 @@
             <button
                 class="btn"
                 :class="{ primary: authMode === 'login' }"
-                @click="authMode = 'login'"
+                @click="authMode = 'login'; authError = ''"
             >
               登录
             </button>
+
             <button
                 class="btn"
                 :class="{ primary: authMode === 'register' }"
-                @click="authMode = 'register'"
+                @click="authMode = 'register'; authError = ''"
             >
               注册
             </button>
@@ -641,7 +651,8 @@
 
 <script setup>
 import './styles/app.css'
-import { reactive, ref, computed, onMounted, onBeforeUnmount  } from 'vue'
+import { reactive, ref, computed, onMounted, onBeforeUnmount } from 'vue'
+
 import TopBar from './components/TopBar.vue'
 import BoardNav from './components/BoardNav.vue'
 import ItemList from './components/ItemList.vue'
@@ -674,7 +685,7 @@ import {
 const token = ref(localStorage.getItem('token') || '')
 const q = ref('')
 const status = ref('')
-const showAuth = ref(false)
+const showAuthDialog = ref(false)
 const currentView = ref('home')
 
 const authMode = ref('login')
@@ -731,6 +742,7 @@ const profile = reactive({
   bio: '',
   wechatQrUrl: ''
 })
+
 const profileMsg = ref('')
 const paymentMsg = ref('')
 
@@ -741,9 +753,13 @@ const boards = [
   { key: 'daily', name: '日用' },
   { key: 'sports', name: '运动' }
 ]
-const boardsMap = boards.reduce((m, x) => (m[x.key] = x.name, m), {})
-const activeBoard = ref('all')
 
+const boardsMap = boards.reduce((m, x) => {
+  m[x.key] = x.name
+  return m
+}, {})
+
+const activeBoard = ref('all')
 
 const listTitle = computed(() => {
   const b = boardsMap[activeBoard.value] || '全部'
@@ -756,7 +772,6 @@ function setToken(res) {
   localStorage.setItem('token', res.data.token)
   token.value = res.data.token
 }
-
 
 function fillProfile(data) {
   profile.id = data?.id ?? null
@@ -787,10 +802,29 @@ function cancelEdit() {
   currentView.value = 'myItems'
 }
 
+function openAuthDialog(mode = 'login', message = '') {
+  authMode.value = mode
+  authError.value = message
+  showAuthDialog.value = true
+}
+
+function closeAuthDialog() {
+  showAuthDialog.value = false
+  authError.value = ''
+}
+
+function requireLogin(message = '请先登录后再继续操作') {
+  if (token.value) return true
+  openAuthDialog('login', message)
+  return false
+}
+
 async function doRegister() {
   authError.value = ''
+
   try {
     setToken(await register(auth.username, auth.password))
+    closeAuthDialog()
     currentView.value = 'home'
     await loadInitialData()
   } catch (e) {
@@ -800,8 +834,10 @@ async function doRegister() {
 
 async function doLogin() {
   authError.value = ''
+
   try {
     setToken(await login(auth.username, auth.password))
+    closeAuthDialog()
     currentView.value = 'home'
     await loadInitialData()
   } catch (e) {
@@ -812,20 +848,19 @@ async function doLogin() {
 function logout() {
   localStorage.removeItem('token')
   token.value = ''
-  items.value = []
   recs.value = []
   orders.value = []
+  salesOrders.value = []
+  myItems.value = []
   fillProfile(null)
   currentView.value = 'home'
+  loadItems()
 }
 
-
-// 在切换板块时加载数据
 function selectBoard(key) {
   activeBoard.value = key
   loadItems()
 }
-
 
 function quickFilter(s) {
   status.value = s
@@ -837,36 +872,33 @@ function handleSearch() {
 }
 
 function handleGoPost() {
-  if (!token.value) {
-    currentView.value = 'auth'
-    return
-  }
+  if (!requireLogin('请先登录后再发布商品')) return
   currentView.value = 'post'
 }
 
 async function loadItems() {
-  listError.value = ''  // 清空错误信息
+  listError.value = ''
+
   try {
-    // 发请求时传递当前板块（activeBoard）以进行过滤
     const res = await listItems({
-      q: q.value || undefined, // 搜索关键词
-      status: status.value || undefined, // 商品状态
-      board: activeBoard.value // 使用activeBoard进行板块过滤
+      q: q.value || undefined,
+      status: status.value || undefined,
+      board: activeBoard.value
     })
 
-    // 如果请求失败，抛出错误
     if (!res.success) throw new Error(res.message || '加载商品失败')
-
-    // 更新页面上显示的商品列表
     items.value = res.data
   } catch (e) {
-    // 捕获错误，展示在页面
     listError.value = e.message
   }
 }
 
 async function createPost() {
   postError.value = ''
+
+  if (!requireLogin('请先登录后再发布商品')) {
+    return
+  }
 
   try {
     const res = await createItem({
@@ -881,7 +913,7 @@ async function createPost() {
     if (!res.success) throw new Error(res.message || 'create failed')
 
     resetPostForm()
-    await loadItems()  // 发布后立即加载商品列表，确保新商品展示
+    await loadItems()
     currentView.value = 'home'
   } catch (e) {
     postError.value = e.message
@@ -890,6 +922,10 @@ async function createPost() {
 
 async function updatePost() {
   postError.value = ''
+
+  if (!requireLogin('请先登录后再编辑商品')) {
+    return
+  }
 
   try {
     const res = await updateItem(editingItemId.value, {
@@ -914,11 +950,16 @@ async function updatePost() {
 
 async function doDeleteItem(id) {
   myItemsError.value = ''
+
+  if (!requireLogin('请先登录后再删除商品')) {
+    return
+  }
+
   try {
     const res = await deleteItem(id)
     if (!res.success) throw new Error(res.message || '删除失败')
 
-    myItems.value = myItems.value.filter(item => item.id !== id) // 删除成功后从列表中移除商品
+    myItems.value = myItems.value.filter(item => item.id !== id)
     await loadMyItems()
     await loadItems()
   } catch (e) {
@@ -926,10 +967,9 @@ async function doDeleteItem(id) {
   }
 }
 
-
-
 async function openDetail(id) {
   detailErr.value = ''
+
   try {
     const res = await getItemDetail(id)
     if (!res.success) throw new Error(res.message || 'load failed')
@@ -942,12 +982,20 @@ async function openDetail(id) {
 
 async function doCreateOrder(itemId) {
   if (!itemId) return
+  detailErr.value = ''
+
+  if (!requireLogin('请先登录后再下单')) {
+    return
+  }
+
   try {
     const res = await createOrder(itemId)
     if (!res.success) throw new Error(res.message || '下单失败')
+
     showDetail.value = false
     currentView.value = 'orders'
     await loadOrders()
+    await loadSalesOrders()
   } catch (e) {
     detailErr.value = e.message
   }
@@ -955,14 +1003,19 @@ async function doCreateOrder(itemId) {
 
 async function loadRecs() {
   recErr.value = ''
+
+  if (!token.value) {
+    recs.value = []
+    recErr.value = '登录后可查看个性化推荐'
+    return
+  }
+
   try {
-    const res = await getRecommendations(8) // 假设您获取了推荐商品
+    const res = await getRecommendations(8)
     if (!res.success) throw new Error(res.message || 'reco failed')
 
-    // 过滤下架商品和已删除商品
     recs.value = res.data.filter(item => item.status !== 'OFF_SHELF' && !item.deleted)
 
-    // 如果没有推荐商品，给出提示
     if (recs.value.length === 0) {
       recErr.value = '暂无推荐商品，请多浏览几个商品'
     }
@@ -973,6 +1026,11 @@ async function loadRecs() {
 
 async function loadOrders() {
   orderError.value = ''
+
+  if (!requireLogin('请先登录后再查看订单')) {
+    return
+  }
+
   try {
     const res = await listMyOrders()
     if (!res.success) throw new Error(res.message || '订单加载失败')
@@ -990,9 +1048,15 @@ function openPayDialog(order) {
 
 async function doPayOrder(orderId) {
   payMsg.value = ''
+
+  if (!requireLogin('请先登录后再支付订单')) {
+    return
+  }
+
   try {
     const res = await payOrder(orderId)
     if (!res.success) throw new Error(res.message || '支付确认失败')
+
     payMsg.value = '支付成功，订单已完成'
     await loadOrders()
     await loadItems()
@@ -1004,9 +1068,15 @@ async function doPayOrder(orderId) {
 async function doCancelOrder(orderId) {
   payMsg.value = ''
   orderError.value = ''
+
+  if (!requireLogin('请先登录后再取消订单')) {
+    return
+  }
+
   try {
     const res = await cancelOrder(orderId)
     if (!res.success) throw new Error(res.message || '取消订单失败')
+
     showPayDialog.value = false
     await loadOrders()
     await loadItems()
@@ -1020,6 +1090,11 @@ async function doCancelOrder(orderId) {
 async function loadProfile() {
   profileMsg.value = ''
   paymentMsg.value = ''
+
+  if (!requireLogin('请先登录后再查看个人中心')) {
+    return
+  }
+
   try {
     const res = await getMyProfile()
     if (!res.success) throw new Error(res.message || '个人信息加载失败')
@@ -1031,13 +1106,20 @@ async function loadProfile() {
 
 async function saveProfile() {
   profileMsg.value = ''
+
+  if (!requireLogin('请先登录后再保存资料')) {
+    return
+  }
+
   try {
     const res = await updateMyProfile({
       nickname: profile.nickname,
       avatarUrl: profile.avatarUrl,
       bio: profile.bio
     })
+
     if (!res.success) throw new Error(res.message || '保存失败')
+
     fillProfile(res.data)
     profileMsg.value = '个人资料已保存'
   } catch (e) {
@@ -1047,11 +1129,18 @@ async function saveProfile() {
 
 async function savePayment() {
   paymentMsg.value = ''
+
+  if (!requireLogin('请先登录后再保存收款码')) {
+    return
+  }
+
   try {
     const res = await updateMyPayment({
       wechatQrUrl: profile.wechatQrUrl
     })
+
     if (!res.success) throw new Error(res.message || '保存收款码失败')
+
     fillProfile(res.data)
     paymentMsg.value = '收款码已保存'
   } catch (e) {
@@ -1061,13 +1150,25 @@ async function savePayment() {
 
 async function loadInitialData() {
   await loadItems()
-  await loadRecs()
-  await loadProfile()
-}
 
+  if (token.value) {
+    await Promise.allSettled([
+      loadRecs(),
+      loadProfile()
+    ])
+  } else {
+    recs.value = []
+    recErr.value = ''
+  }
+}
 
 async function loadSalesOrders() {
   salesOrderError.value = ''
+
+  if (!requireLogin('请先登录后再查看卖出订单')) {
+    return
+  }
+
   try {
     const res = await listMySalesOrders()
     if (!res.success) throw new Error(res.message || '卖出订单加载失败')
@@ -1079,6 +1180,11 @@ async function loadSalesOrders() {
 
 async function loadMyItems() {
   myItemsError.value = ''
+
+  if (!requireLogin('请先登录后再查看我的发布')) {
+    return
+  }
+
   try {
     const res = await listMyItems()
     if (!res.success) throw new Error(res.message || '我的发布加载失败')
@@ -1090,9 +1196,15 @@ async function loadMyItems() {
 
 async function doPutOnShelf(id) {
   myItemsError.value = ''
+
+  if (!requireLogin('请先登录后再重新上架商品')) {
+    return
+  }
+
   try {
     const res = await putOnShelfItem(id)
     if (!res.success) throw new Error(res.message || '重新上架失败')
+
     await loadMyItems()
     await loadItems()
   } catch (e) {
@@ -1102,9 +1214,15 @@ async function doPutOnShelf(id) {
 
 async function doOffShelf(id) {
   myItemsError.value = ''
+
+  if (!requireLogin('请先登录后再下架商品')) {
+    return
+  }
+
   try {
     const res = await offShelfItem(id)
     if (!res.success) throw new Error(res.message || '下架失败')
+
     await loadMyItems()
     await loadItems()
   } catch (e) {
@@ -1114,6 +1232,10 @@ async function doOffShelf(id) {
 
 async function openEditItem(item) {
   postError.value = ''
+
+  if (!requireLogin('请先登录后再编辑商品')) {
+    return
+  }
 
   try {
     const res = await getItemDetail(item.id)
@@ -1144,10 +1266,19 @@ async function openEditItem(item) {
   }
 }
 
-
 function switchView(view) {
+  if (view === 'auth') {
+    openAuthDialog('login')
+    return
+  }
+
+  const protectedViews = ['orders', 'profile', 'myItems', 'post']
+
+  if (protectedViews.includes(view) && !requireLogin('请先登录后再使用该功能')) {
+    return
+  }
+
   currentView.value = view
-  if (!token.value) return
 
   if (view === 'orders') {
     loadOrders()
@@ -1158,7 +1289,6 @@ function switchView(view) {
     loadMyItems()
   }
 }
-
 
 async function handleSelectImages(event) {
   const files = Array.from(event.target.files || [])
@@ -1219,8 +1349,10 @@ function removeImage(index) {
 
 function getOrderDeadline(order) {
   if (!order?.createdAt) return null
+
   const created = new Date(order.createdAt).getTime()
   if (Number.isNaN(created)) return null
+
   return created + 10 * 60 * 1000
 }
 
@@ -1249,20 +1381,19 @@ function getOrderStatusLabel(order) {
   if (order.status === 'CREATED') {
     return isOrderExpired(order) ? '交易关闭' : '等待付款'
   }
+
   if (order.status === 'PAID') return '交易成功'
   if (order.status === 'CANCELED') return '已取消'
+
   return order.status
 }
-
 
 onMounted(async () => {
   countdownTimer = setInterval(() => {
     nowTs.value = Date.now()
   }, 1000)
 
-  if (token.value) {
-    await loadInitialData()
-  }
+  await loadInitialData()
 })
 
 onBeforeUnmount(() => {

@@ -9,6 +9,10 @@ public class CurrentUser {
   public String username() {
     Authentication a = SecurityContextHolder.getContext().getAuthentication();
     if (a == null || !a.isAuthenticated()) return null;
-    return a.getName();
+
+    String name = a.getName();
+    if (name == null || "anonymousUser".equals(name)) return null;
+
+    return name;
   }
 }

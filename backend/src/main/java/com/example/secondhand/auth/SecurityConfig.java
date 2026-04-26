@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -40,7 +41,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/", "/api/auth/**").permitAll()
 
                     // 放行上传后的静态图片资源
                     .requestMatchers("/uploads/**").permitAll()
@@ -53,8 +54,11 @@ public class SecurityConfig {
                     // 文件上传
                     .requestMatchers(HttpMethod.POST, "/api/files/upload").hasAnyRole("USER", "ADMIN")
 
-                    // 商品：登录用户可用
-                    .requestMatchers(HttpMethod.GET, "/api/items/**").hasAnyRole("USER", "ADMIN")
+                    // 商品浏览：未登录也可以访问商品列表和商品详情
+                    .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
+                    .requestMatchers(new RegexRequestMatcher("^/api/items/\\d+$", "GET")).permitAll()
+
+                    // 商品发布、编辑、上下架、删除：必须登录
                     .requestMatchers(HttpMethod.POST, "/api/items/**").hasAnyRole("USER", "ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/api/items/**").hasAnyRole("USER", "ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/items/**").hasAnyRole("USER", "ADMIN")
