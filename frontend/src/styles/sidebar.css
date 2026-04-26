@@ -1,0 +1,54 @@
+.sidebar-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.sidebar-card {
+    overflow: hidden;
+}
+
+.notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notice-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+}
+
+.notice-label {
+    color: #475569;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.notice-value {
+    color: #0f766e;
+    font-size: 13px;
+    font-weight: 800;
+    background: #ecfeff;
+    border: 1px solid #bae6fd;
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.sidebar-filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar-btn {
+    width: 100%;
+    justify-content: center;
+    font-weight: 800;
+}

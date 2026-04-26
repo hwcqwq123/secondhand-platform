@@ -1,0 +1,145 @@
+.item-row {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) 120px;
+    gap: 16px;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid #eef2f7;
+    transition: background 0.2s ease;
+}
+
+.item-row:hover {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.item-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+.item-thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.item-thumb-inner {
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eef2ff, #ecfeff);
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.item-main {
+    min-width: 0;
+}
+
+.item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.item-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1d4ed8;
+    cursor: pointer;
+    line-height: 1.35;
+    transition: color 0.2s ease;
+}
+
+.item-title:hover {
+    color: #4338ca;
+}
+
+.item-price {
+    flex-shrink: 0;
+    font-size: 18px;
+    font-weight: 900;
+    color: #ef4444;
+    white-space: nowrap;
+}
+
+.item-desc {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.item-meta {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+}
+
+.meta-text {
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.badge.reserved {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #fdba74;
+}
+
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.item-actions .btn {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .item-row {
+        grid-template-columns: 72px 1fr;
+    }
+
+    .item-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+
+    .item-actions .btn {
+        width: auto;
+    }
+
+    .item-thumb-inner {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+    }
+
+    .item-title {
+        font-size: 16px;
+    }
+
+    .item-price {
+        font-size: 16px;
+    }
+}

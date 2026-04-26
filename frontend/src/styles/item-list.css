@@ -1,0 +1,45 @@
+.item-list-card {
+    overflow: hidden;
+}
+
+.item-list-subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.item-list-total {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 700;
+}
+
+.item-list-body {
+    padding: 8px 0;
+}
+
+.item-list-empty {
+    padding: 42px 20px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.item-list-empty-icon {
+    font-size: 38px;
+    line-height: 1;
+}
+
+.item-list-empty-title {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #1f2937;
+}
+
+.item-list-empty-desc {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #94a3b8;
+}

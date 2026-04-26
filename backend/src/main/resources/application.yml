@@ -1,0 +1,32 @@
+﻿server:
+  port: 8080
+
+spring:
+  datasource:
+    # 数据库连接地址：
+    # localhost:3378 表示连接本机 MySQL 的 3378 端口
+    # ick7778 是项目使用的数据库名称
+    # 如果你的 MySQL 端口不是 3378，需要改成自己的端口
+    url: jdbc:mysql://localhost:3378/ick7778?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+
+    # MySQL 数据库用户名，默认使用 root
+    username: root
+
+    # MySQL 数据库密码，需要改成你自己安装 MySQL 时设置的 root 密码
+    password: 0721
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 20MB
+
+app:
+  jwt:
+    secret: "bWluaS1zZWNvbmQtaGFuZC1wbGF0Zm9ybS1qd3Qtc2VjcmV0LTEyMzQ1Njc4OTAxMjM0NTY3ODkw"
+    expires-minutes: 120
