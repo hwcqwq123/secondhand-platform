@@ -14,7 +14,6 @@ spring:
     # MySQL 密码
     password: "0721"
 
-  # Redis 配置：Docker Redis 默认映射到本机 6379
   data:
     redis:
       host: 127.0.0.1
@@ -33,6 +32,19 @@ spring:
       max-request-size: 20MB
 
 app:
+  upload:
+    # 商品图片上传目录
+    items-dir: uploads/items
+
+    # 后端启动 60 秒后第一次清理
+    cleanup-initial-delay-ms: 60000
+
+    # 每隔 1 小时清理一次
+    cleanup-fixed-delay-ms: 3600000
+
+    # 超过 60 分钟仍未被商品引用的图片会被删除
+    cleanup-expire-minutes: 60
+
   jwt:
     secret: "bWluaS1zZWNvbmQtaGFuZC1wbGF0Zm9ybS1qd3Qtc2VjcmV0LTEyMzQ1Njc4OTAxMjM0NTY3ODkw"
     expires-minutes: 120

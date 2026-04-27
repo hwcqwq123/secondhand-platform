@@ -15,9 +15,12 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\Globa
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\HomeController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\RedisConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\RedisTestController.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\SchedulingConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\StaticResourceConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\WebConfig.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\file\FileCleanupTask.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\file\FileController.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\file\FileStorageService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\item\Item.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\item\ItemController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\item\ItemCreateRequest.java

@@ -1,11 +1,14 @@
 com\example\secondhand\config\WebConfig$1.class
+com\example\secondhand\file\FileCleanupTask.class
 com\example\secondhand\item\ItemResponse.class
 com\example\secondhand\order\OrderService.class
 com\example\secondhand\file\FileController$UploadResponse.class
 com\example\secondhand\auth\AuthResponse.class
+com\example\secondhand\config\SchedulingConfig.class
 com\example\secondhand\auth\JwtAuthFilter.class
 com\example\secondhand\file\FileController.class
 com\example\secondhand\order\TradeOrder.class
+com\example\secondhand\file\FileController$DeleteUnboundRequest.class
 com\example\secondhand\auth\SecurityConfig.class
 com\example\secondhand\config\GlobalExceptionHandler.class
 com\example\secondhand\auth\RegisterRequest.class
@@ -13,6 +16,7 @@ com\example\secondhand\order\RedisLockService.class
 com\example\secondhand\SecondhandApplication.class
 com\example\secondhand\user\UserProfileResponse.class
 com\example\secondhand\item\ItemController.class
+com\example\secondhand\file\FileStorageService.class
 com\example\secondhand\item\ItemRepository.class
 com\example\secondhand\config\HomeController.class
 com\example\secondhand\config\ApiResponse.class
@@ -25,6 +29,7 @@ com\example\secondhand\order\OrderResponse.class
 com\example\secondhand\auth\CurrentUser.class
 com\example\secondhand\order\OrderResponse$ItemInfo.class
 com\example\secondhand\behavior\UserBehavior.class
+com\example\secondhand\file\FileController$DeleteUnboundResponse.class
 com\example\secondhand\item\ItemImage.class
 com\example\secondhand\item\ItemCreateRequest.class
 com\example\secondhand\behavior\UserBehaviorRepository.class

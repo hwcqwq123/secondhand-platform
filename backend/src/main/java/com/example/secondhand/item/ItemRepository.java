@@ -36,12 +36,9 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             """)
     List<Item> findBySellerIdWithSeller(@Param("sellerId") Long sellerId);
 
-    /**
-     * MySQL 行锁：
-     * 下单、支付、取消订单时使用。
-     * Redis 锁只是前置拦截，MySQL 行锁才是最终一致性的兜底。
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select i from Item i join fetch i.seller where i.id = :id")
     Optional<Item> findWithLockById(@Param("id") Long id);
+
+    boolean existsByCoverImageUrl(String coverImageUrl);
 }

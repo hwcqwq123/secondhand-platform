@@ -56,6 +56,7 @@ public class SecurityConfig {
 
                     // 文件上传
                     .requestMatchers(HttpMethod.POST, "/api/files/upload").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/files/delete-unbound").hasAnyRole("USER", "ADMIN")
 
                     // 商品浏览：未登录也可以访问商品列表和商品详情
                     .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
