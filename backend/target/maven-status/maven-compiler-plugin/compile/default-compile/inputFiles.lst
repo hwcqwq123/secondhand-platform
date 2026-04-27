@@ -13,6 +13,8 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\behavior\Use
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\ApiResponse.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\GlobalExceptionHandler.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\HomeController.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\RedisConfig.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\RedisTestController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\StaticResourceConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\WebConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\file\FileController.java
@@ -31,7 +33,9 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\Create
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\OrderController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\OrderRepository.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\OrderResponse.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\OrderService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\OrderStatus.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\RedisLockService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\order\TradeOrder.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\reco\RecommendationController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\SecondhandApplication.java

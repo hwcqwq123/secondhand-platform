@@ -1,5 +1,6 @@
 com\example\secondhand\config\WebConfig$1.class
 com\example\secondhand\item\ItemResponse.class
+com\example\secondhand\order\OrderService.class
 com\example\secondhand\file\FileController$UploadResponse.class
 com\example\secondhand\auth\AuthResponse.class
 com\example\secondhand\auth\JwtAuthFilter.class
@@ -8,6 +9,7 @@ com\example\secondhand\order\TradeOrder.class
 com\example\secondhand\auth\SecurityConfig.class
 com\example\secondhand\config\GlobalExceptionHandler.class
 com\example\secondhand\auth\RegisterRequest.class
+com\example\secondhand\order\RedisLockService.class
 com\example\secondhand\SecondhandApplication.class
 com\example\secondhand\user\UserProfileResponse.class
 com\example\secondhand\item\ItemController.class
@@ -29,12 +31,14 @@ com\example\secondhand\behavior\UserBehaviorRepository.class
 com\example\secondhand\user\UserRepository.class
 com\example\secondhand\user\UpdatePaymentRequest.class
 com\example\secondhand\order\OrderStatus.class
+com\example\secondhand\config\RedisTestController.class
 com\example\secondhand\order\OrderResponse$SellerInfo.class
 com\example\secondhand\user\UpdateProfileRequest.class
 com\example\secondhand\auth\AppUserDetailsService.class
 com\example\secondhand\user\User.class
 com\example\secondhand\order\OrderRepository.class
 com\example\secondhand\item\ItemStatus.class
+com\example\secondhand\config\RedisConfig.class
 com\example\secondhand\item\ItemUpdateRequest.class
 com\example\secondhand\item\ItemEditRequest.class
 com\example\secondhand\config\WebConfig.class

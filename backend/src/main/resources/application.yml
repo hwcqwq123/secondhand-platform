@@ -3,7 +3,7 @@
 
 spring:
   datasource:
-    # 数据库连接地址
+    # 数据库连接地址：
     # 127.0.0.1:3378 表示连接本机 MySQL 8 的 3378 端口
     # ick7778 是项目数据库名
     url: jdbc:mysql://127.0.0.1:3378/ick7778?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
@@ -11,9 +11,15 @@ spring:
     # MySQL 用户名
     username: root
 
-    # MySQL 密码：必须改成你安装 MySQL 8 时设置的 root 密码
-    # 如果密码有 @ # ! : 等特殊符号，建议加双引号
+    # MySQL 密码
     password: "0721"
+
+  # Redis 配置：Docker Redis 默认映射到本机 6379
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 3000ms
 
   jpa:
     hibernate:
