@@ -1,8 +1,18 @@
 package com.example.secondhand.user;
 
+import java.time.Instant;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -23,8 +33,26 @@ public class User {
   @Column(name = "password_hash", nullable = false, length = 100)
   private String passwordHash;
 
+  /**
+   * 原来只有 USER / ADMIN。
+   * 现在支持：
+   * USER 普通用户
+   * ADMIN 老管理员兼容
+   * SUPER_ADMIN 超级管理员
+   * ITEM_ADMIN 商品管理员
+   * ORDER_ADMIN 订单管理员
+   * USER_ADMIN 用户管理员
+   * SYSTEM_ADMIN 系统/日志管理员
+   */
   @Column(nullable = false, length = 32)
   private String role = "USER";
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", length = 20)
+  private UserStatus status = UserStatus.NORMAL;
+
+  @Column(name = "created_at", updatable = false)
+  private Instant createdAt = Instant.now();
 
   @Column(name = "nickname", length = 64)
   private String nickname;
@@ -54,6 +82,14 @@ public class User {
     return role;
   }
 
+  public UserStatus getStatus() {
+    return status;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
   public String getNickname() {
     return nickname;
   }
@@ -80,6 +116,14 @@ public class User {
 
   public void setRole(String role) {
     this.role = role;
+  }
+
+  public void setStatus(UserStatus status) {
+    this.status = status;
+  }
+
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
   }
 
   public void setNickname(String nickname) {

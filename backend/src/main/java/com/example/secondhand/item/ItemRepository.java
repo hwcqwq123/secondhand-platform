@@ -41,4 +41,28 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
     Optional<Item> findWithLockById(@Param("id") Long id);
 
     boolean existsByCoverImageUrl(String coverImageUrl);
+
+    long countByStatus(ItemStatus status);
+
+    long countByDeleted(Boolean deleted);
+
+    long countBySeller_Id(Long sellerId);
+
+    @Query("""
+            select i from Item i
+            join fetch i.seller s
+            where (:keyword is null
+                   or lower(i.title) like lower(concat('%', :keyword, '%'))
+                   or lower(coalesce(i.description, '')) like lower(concat('%', :keyword, '%'))
+                   or lower(s.username) like lower(concat('%', :keyword, '%'))
+                   or lower(coalesce(s.nickname, '')) like lower(concat('%', :keyword, '%')))
+            and (:status is null or i.status = :status)
+            and (:includeDeleted = true or coalesce(i.deleted, false) = false)
+            order by i.id desc
+            """)
+    List<Item> findAdminItems(
+            @Param("keyword") String keyword,
+            @Param("status") ItemStatus status,
+            @Param("includeDeleted") boolean includeDeleted
+    );
 }

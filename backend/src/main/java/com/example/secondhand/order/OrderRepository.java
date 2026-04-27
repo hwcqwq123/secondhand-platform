@@ -3,6 +3,7 @@ package com.example.secondhand.order;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,11 +39,14 @@ public interface OrderRepository extends JpaRepository<TradeOrder, Long> {
 
     boolean existsByItem_IdAndStatusIn(Long itemId, Collection<OrderStatus> statuses);
 
-    /**
-     * 判断某个商品是否存在未完成或已支付订单。
-     * CREATED：待支付
-     * PAID：已支付
-     */
+    long countByStatus(OrderStatus status);
+
+    long countByItem_Id(Long itemId);
+
+    long countByBuyer_Id(Long buyerId);
+
+    long countByItem_Seller_Id(Long sellerId);
+
     @Query("""
             select count(o) > 0 from TradeOrder o
             where o.item.id = :itemId
@@ -53,10 +57,6 @@ public interface OrderRepository extends JpaRepository<TradeOrder, Long> {
             @Param("statuses") Collection<OrderStatus> statuses
     );
 
-    /**
-     * 查询某个商品的超时未支付订单。
-     * 下单前释放超时订单，避免商品长期卡在 RESERVED。
-     */
     @Query("""
             select o from TradeOrder o
             join fetch o.item i
@@ -71,4 +71,30 @@ public interface OrderRepository extends JpaRepository<TradeOrder, Long> {
             @Param("status") OrderStatus status,
             @Param("deadline") Instant deadline
     );
+
+    @Query("""
+            select o from TradeOrder o
+            join fetch o.item i
+            join fetch i.seller s
+            join fetch o.buyer b
+            where (:keyword is null
+                   or lower(i.title) like lower(concat('%', :keyword, '%'))
+                   or lower(b.username) like lower(concat('%', :keyword, '%'))
+                   or lower(s.username) like lower(concat('%', :keyword, '%')))
+            and (:status is null or o.status = :status)
+            order by o.id desc
+            """)
+    List<TradeOrder> findAdminOrders(
+            @Param("keyword") String keyword,
+            @Param("status") OrderStatus status
+    );
+
+    @Query("""
+            select o from TradeOrder o
+            join fetch o.item i
+            join fetch i.seller
+            join fetch o.buyer
+            where o.id = :id
+            """)
+    Optional<TradeOrder> findByIdWithItemBuyerSeller(@Param("id") Long id);
 }

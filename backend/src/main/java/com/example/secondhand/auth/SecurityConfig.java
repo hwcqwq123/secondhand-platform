@@ -42,39 +42,40 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/", "/api/auth/**").permitAll()
-
-                    // Redis 测试接口：未登录也可以访问
                     .requestMatchers("/api/redis/ping").permitAll()
-
-                    // 放行上传后的静态图片资源
                     .requestMatchers("/uploads/**").permitAll()
 
-                    // 用户个人中心：登录用户可用
-                    .requestMatchers(HttpMethod.GET, "/api/users/me").hasAnyRole("USER", "ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/api/users/me").hasAnyRole("USER", "ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/api/users/me/payment").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/users/me").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/users/me").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/users/me/payment").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
 
-                    // 文件上传
-                    .requestMatchers(HttpMethod.POST, "/api/files/upload").hasAnyRole("USER", "ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/files/delete-unbound").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/files/upload").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/files/delete-unbound").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
 
-                    // 商品浏览：未登录也可以访问商品列表和商品详情
                     .requestMatchers(HttpMethod.GET, "/api/items").permitAll()
                     .requestMatchers(new RegexRequestMatcher("^/api/items/\\d+$", "GET")).permitAll()
 
-                    // 商品发布、编辑、上下架、删除：必须登录
-                    .requestMatchers(HttpMethod.POST, "/api/items/**").hasAnyRole("USER", "ADMIN")
-                    .requestMatchers(HttpMethod.PUT, "/api/items/**").hasAnyRole("USER", "ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/api/items/**").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/items/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/items/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/items/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
 
-                    // 订单：登录用户可用
-                    .requestMatchers("/api/orders/**").hasAnyRole("USER", "ADMIN")
+                    .requestMatchers("/api/orders/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers("/api/recommendations/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
 
-                    // 推荐 / AI客服：登录用户可用
-                    .requestMatchers("/api/recommendations/**").hasAnyRole("USER", "ADMIN")
+                    /**
+                     * 后台接口权限细分：
+                     * 不是只靠前端隐藏页面，而是在后端 SecurityConfig 中强制校验。
+                     */
+                    .requestMatchers("/api/admin/items/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "ITEM_ADMIN")
+                    .requestMatchers("/api/admin/orders/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "ORDER_ADMIN")
+                    .requestMatchers("/api/admin/users/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "USER_ADMIN")
+                    .requestMatchers("/api/admin/logs/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "SYSTEM_ADMIN")
+                    .requestMatchers("/api/admin/stats/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "ITEM_ADMIN", "ORDER_ADMIN", "USER_ADMIN", "SYSTEM_ADMIN")
 
-                    // 总后台
-                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    /**
+                     * 兜底：admin 其他接口只允许老 ADMIN 和 SUPER_ADMIN。
+                     */
+                    .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                     .anyRequest().authenticated()
             )

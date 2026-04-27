@@ -3,15 +3,8 @@
 
 spring:
   datasource:
-    # 数据库连接地址：
-    # 127.0.0.1:3378 表示连接本机 MySQL 8 的 3378 端口
-    # ick7778 是项目数据库名
     url: jdbc:mysql://127.0.0.1:3378/ick7778?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-
-    # MySQL 用户名
     username: root
-
-    # MySQL 密码
     password: "0721"
 
   data:
@@ -33,18 +26,18 @@ spring:
 
 app:
   upload:
-    # 商品图片上传目录
     items-dir: uploads/items
-
-    # 后端启动 60 秒后第一次清理
     cleanup-initial-delay-ms: 60000
-
-    # 每隔 1 小时清理一次
     cleanup-fixed-delay-ms: 3600000
-
-    # 超过 60 分钟仍未被商品引用的图片会被删除
     cleanup-expire-minutes: 60
 
   jwt:
     secret: "bWluaS1zZWNvbmQtaGFuZC1wbGF0Zm9ybS1qd3Qtc2VjcmV0LTEyMzQ1Njc4OTAxMjM0NTY3ODkw"
     expires-minutes: 120
+
+  admin:
+    enabled: true
+    username: admin
+    password: admin123456
+    nickname: 系统管理员
+    role: SUPER_ADMIN
