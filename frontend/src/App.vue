@@ -990,14 +990,52 @@ async function doCreateOrder(itemId) {
 
   try {
     const res = await createOrder(itemId)
-    if (!res.success) throw new Error(res.message || '下单失败')
+
+    if (!res.success) {
+      throw new Error(res.message || '下单失败')
+    }
 
     showDetail.value = false
     currentView.value = 'orders'
-    await loadOrders()
-    await loadSalesOrders()
+
+    await Promise.allSettled([
+      loadOrders(),
+      loadSalesOrders(),
+      loadItems()
+    ])
   } catch (e) {
-    detailErr.value = e.message
+    detailErr.value = e.message || '下单失败'
+
+    // 关键修改：
+    // 如果下单失败，说明商品可能已经被别人下单、售出、下架或删除。
+    // 此时立即刷新商品详情和商品列表，避免前端继续显示旧状态。
+    await refreshItemAfterOrderFailed(itemId)
+  }
+}
+
+async function refreshItemAfterOrderFailed(itemId) {
+  try {
+    const res = await getItemDetail(itemId)
+
+    if (res.success) {
+      detail.value = res.data
+    }
+  } catch (e) {
+    console.warn('刷新商品详情失败：', e)
+  }
+
+  try {
+    await loadItems()
+  } catch (e) {
+    console.warn('刷新商品列表失败：', e)
+  }
+
+  if (token.value) {
+    try {
+      await loadRecs()
+    } catch (e) {
+      console.warn('刷新推荐失败：', e)
+    }
   }
 }
 

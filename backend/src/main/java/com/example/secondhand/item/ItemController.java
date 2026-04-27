@@ -1,20 +1,32 @@
 package com.example.secondhand.item;
 
-import com.example.secondhand.auth.CurrentUser;
-import com.example.secondhand.behavior.UserBehavior;
-import com.example.secondhand.behavior.UserBehaviorRepository;
-import com.example.secondhand.config.ApiResponse;
-import com.example.secondhand.user.User;
-import com.example.secondhand.user.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.secondhand.auth.CurrentUser;
+import com.example.secondhand.behavior.UserBehavior;
+import com.example.secondhand.behavior.UserBehaviorRepository;
+import com.example.secondhand.config.ApiResponse;
+import com.example.secondhand.order.OrderRepository;
+import com.example.secondhand.order.OrderStatus;
+import com.example.secondhand.user.User;
+import com.example.secondhand.user.UserRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/items")
@@ -25,19 +37,22 @@ public class ItemController {
     private final UserRepository users;
     private final CurrentUser currentUser;
     private final UserBehaviorRepository behaviors;
+    private final OrderRepository orders;
 
     public ItemController(
             ItemRepository items,
             ItemImageRepository itemImages,
             UserRepository users,
             CurrentUser currentUser,
-            UserBehaviorRepository behaviors
+            UserBehaviorRepository behaviors,
+            OrderRepository orders
     ) {
         this.items = items;
         this.itemImages = itemImages;
         this.users = users;
         this.currentUser = currentUser;
         this.behaviors = behaviors;
+        this.orders = orders;
     }
 
     @GetMapping
@@ -48,31 +63,25 @@ public class ItemController {
     ) {
         List<Item> data;
 
-        // 根据搜索条件加载商品
         if (q != null && !q.isBlank()) {
             data = items.searchWithSeller(q);
         } else if (status != null) {
-            // 根据状态加载商品
             data = items.findByStatusWithSeller(status);
         } else {
-            // 默认加载所有商品
             data = items.findAllWithSeller();
         }
 
-        // 默认隐藏下架商品和已删除商品
         data = data.stream()
-                .filter(i -> Boolean.FALSE.equals(i.getDeleted()))  // 过滤已删除商品
-                .filter(i -> i.getStatus() != ItemStatus.OFF_SHELF) // 过滤下架商品
+                .filter(i -> !Boolean.TRUE.equals(i.getDeleted()))
+                .filter(i -> i.getStatus() != ItemStatus.OFF_SHELF)
                 .collect(Collectors.toList());
 
-        // 按板块过滤商品，若board为空或"all"，则不过滤
         if (board != null && !board.isBlank() && !"all".equalsIgnoreCase(board)) {
             data = data.stream()
-                    .filter(i -> board.equals(i.getBoard()))  // 根据板块进行过滤
+                    .filter(i -> board.equals(i.getBoard()))
                     .collect(Collectors.toList());
         }
 
-        // 将筛选后的数据转换为ItemResponse对象
         List<ItemResponse> res = data.stream()
                 .map(i -> new ItemResponse(
                         i.getId(),
@@ -88,7 +97,7 @@ public class ItemController {
                         ),
                         i.getCoverImageUrl(),
                         List.of(),
-                        i.getBoard()  // 添加板块信息
+                        i.getBoard()
                 ))
                 .collect(Collectors.toList());
 
@@ -102,14 +111,19 @@ public class ItemController {
                 .orElseThrow(() -> new EntityNotFoundException("item not found"));
 
         String username = currentUser.username();
+
         if (username != null) {
             try {
                 User u = users.findByUsername(username)
                         .orElseThrow(() -> new EntityNotFoundException("user not found"));
 
                 Instant cutoff = Instant.now().minus(10, ChronoUnit.MINUTES);
+
                 boolean exists = behaviors.existsByUser_IdAndItem_IdAndTypeAndCreatedAtAfter(
-                        u.getId(), i.getId(), "VIEW", cutoff
+                        u.getId(),
+                        i.getId(),
+                        "VIEW",
+                        cutoff
                 );
 
                 if (!exists) {
@@ -145,6 +159,7 @@ public class ItemController {
                 imageUrls,
                 i.getBoard()
         );
+
         return ApiResponse.ok(res);
     }
 
@@ -152,6 +167,7 @@ public class ItemController {
     @Transactional
     public ApiResponse<ItemResponse> create(@Valid @RequestBody ItemCreateRequest req) {
         String username = currentUser.username();
+
         User seller = users.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("seller not found"));
 
@@ -161,72 +177,66 @@ public class ItemController {
         item.setPrice(req.getPrice());
         item.setSeller(seller);
         item.setBoard(req.getBoard());
+        item.setStatus(ItemStatus.AVAILABLE);
+        item.setDeleted(false);
+        item.setDeleteCategory(ItemDeleteCategory.NONE);
 
         List<String> imageUrls = req.getImageUrls();
         Integer coverIndex = req.getCoverIndex();
 
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            int finalCoverIndex = (coverIndex == null ? 0 : coverIndex);
+            int finalCoverIndex = coverIndex == null ? 0 : coverIndex;
+
             if (finalCoverIndex < 0 || finalCoverIndex >= imageUrls.size()) {
                 finalCoverIndex = 0;
             }
+
             item.setCoverImageUrl(imageUrls.get(finalCoverIndex));
         }
 
         Item saved = items.save(item);
 
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            for (int i = 0; i < imageUrls.size(); i++) {
-                String url = imageUrls.get(i);
-                if (url == null || url.isBlank()) continue;
+            for (int index = 0; index < imageUrls.size(); index++) {
+                String url = imageUrls.get(index);
+
+                if (url == null || url.isBlank()) {
+                    continue;
+                }
 
                 ItemImage image = new ItemImage();
                 image.setItem(saved);
                 image.setImageUrl(url);
-                image.setSortOrder(i);
+                image.setSortOrder(index);
                 itemImages.save(image);
             }
         }
 
-        List<String> savedImageUrls = itemImages.findByItemIdOrderBySortOrderAsc(saved.getId())
-                .stream()
-                .map(ItemImage::getImageUrl)
-                .collect(Collectors.toList());
-
-        ItemResponse res = new ItemResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getDescription(),
-                saved.getPrice(),
-                saved.getStatus(),
-                saved.getCreatedAt(),
-                new ItemResponse.SellerResponse(
-                        seller.getId(),
-                        seller.getUsername(),
-                        seller.getNickname()
-                ),
-                saved.getCoverImageUrl(),
-                savedImageUrls,
-                saved.getBoard()
-        );
-
-        return ApiResponse.ok(res);
+        return ApiResponse.ok(toResponseWithImages(saved));
     }
 
     @PutMapping("/{id}")
     @Transactional
     public ApiResponse<ItemResponse> update(@PathVariable Long id, @Valid @RequestBody ItemEditRequest req) {
         String username = currentUser.username();
+
         Item item = items.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("item not found"));
 
-        boolean isOwner = item.getSeller().getUsername().equals(username);
-        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        if (!isOwner && !isAdmin) {
+        if (!canManageItem(item, username)) {
             return ApiResponse.fail("only owner/admin can update");
+        }
+
+        if (Boolean.TRUE.equals(item.getDeleted())) {
+            return ApiResponse.fail("已删除商品不能修改");
+        }
+
+        if (item.getStatus() == ItemStatus.RESERVED) {
+            return ApiResponse.fail("商品存在未完成订单，暂不能修改");
+        }
+
+        if (item.getStatus() == ItemStatus.SOLD) {
+            return ApiResponse.fail("已售出商品不能修改");
         }
 
         item.setTitle(req.getTitle());
@@ -238,10 +248,12 @@ public class ItemController {
         Integer coverIndex = req.getCoverIndex();
 
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            int finalCoverIndex = (coverIndex == null ? 0 : coverIndex);
+            int finalCoverIndex = coverIndex == null ? 0 : coverIndex;
+
             if (finalCoverIndex < 0 || finalCoverIndex >= imageUrls.size()) {
                 finalCoverIndex = 0;
             }
+
             item.setCoverImageUrl(imageUrls.get(finalCoverIndex));
         } else {
             item.setCoverImageUrl(null);
@@ -252,53 +264,34 @@ public class ItemController {
         itemImages.deleteByItemId(saved.getId());
 
         if (imageUrls != null && !imageUrls.isEmpty()) {
-            for (int i = 0; i < imageUrls.size(); i++) {
-                String url = imageUrls.get(i);
-                if (url == null || url.isBlank()) continue;
+            for (int index = 0; index < imageUrls.size(); index++) {
+                String url = imageUrls.get(index);
+
+                if (url == null || url.isBlank()) {
+                    continue;
+                }
 
                 ItemImage image = new ItemImage();
                 image.setItem(saved);
                 image.setImageUrl(url);
-                image.setSortOrder(i);
+                image.setSortOrder(index);
                 itemImages.save(image);
             }
         }
 
-        List<String> savedImageUrls = itemImages.findByItemIdOrderBySortOrderAsc(saved.getId())
-                .stream()
-                .map(ItemImage::getImageUrl)
-                .collect(Collectors.toList());
-
-        ItemResponse res = new ItemResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getDescription(),
-                saved.getPrice(),
-                saved.getStatus(),
-                saved.getCreatedAt(),
-                new ItemResponse.SellerResponse(
-                        saved.getSeller().getId(),
-                        saved.getSeller().getUsername(),
-                        saved.getSeller().getNickname()
-                ),
-                saved.getCoverImageUrl(),
-                savedImageUrls,
-                saved.getBoard()
-        );
-
-        return ApiResponse.ok(res, "updated");
+        return ApiResponse.ok(toResponseWithImages(saved), "updated");
     }
 
     @GetMapping("/my")
     @Transactional(readOnly = true)
     public ApiResponse<List<ItemResponse>> myItems() {
         String username = currentUser.username();
+
         User seller = users.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("seller not found"));
 
-        // 仅查询未删除且为卖家发布的商品
         List<Item> data = items.findBySellerIdWithSeller(seller.getId()).stream()
-                .filter(item -> !item.getDeleted()) // 排除已删除商品
+                .filter(item -> !Boolean.TRUE.equals(item.getDeleted()))
                 .collect(Collectors.toList());
 
         List<ItemResponse> res = data.stream()
@@ -323,127 +316,166 @@ public class ItemController {
         return ApiResponse.ok(res);
     }
 
-
     @PutMapping("/{id}/off-shelf")
     @Transactional
     public ApiResponse<ItemResponse> offShelf(@PathVariable Long id) {
         String username = currentUser.username();
+
         Item item = items.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("item not found"));
 
-        boolean isOwner = item.getSeller().getUsername().equals(username);
-        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        if (!isOwner && !isAdmin) {
+        if (!canManageItem(item, username)) {
             return ApiResponse.fail("only owner/admin can off-shelf this item");
+        }
+
+        if (Boolean.TRUE.equals(item.getDeleted())) {
+            return ApiResponse.fail("已删除商品不能下架");
         }
 
         if (item.getStatus() == ItemStatus.OFF_SHELF) {
             return ApiResponse.fail("item already off-shelf");
         }
 
+        if (item.getStatus() == ItemStatus.RESERVED) {
+            return ApiResponse.fail("商品存在未完成订单，不能下架");
+        }
+
+        if (item.getStatus() == ItemStatus.SOLD) {
+            return ApiResponse.fail("已售出商品不能下架");
+        }
+
         item.setStatus(ItemStatus.OFF_SHELF);
         Item saved = items.save(item);
 
-        List<String> imageUrls = itemImages.findByItemIdOrderBySortOrderAsc(saved.getId())
-                .stream()
-                .map(ItemImage::getImageUrl)
-                .collect(Collectors.toList());
-
-        ItemResponse res = new ItemResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getDescription(),
-                saved.getPrice(),
-                saved.getStatus(),
-                saved.getCreatedAt(),
-                new ItemResponse.SellerResponse(
-                        saved.getSeller().getId(),
-                        saved.getSeller().getUsername(),
-                        saved.getSeller().getNickname()
-                ),
-                saved.getCoverImageUrl(),
-                imageUrls,
-                saved.getBoard()
-        );
-
-        return ApiResponse.ok(res, "off-shelf success");
+        return ApiResponse.ok(toResponseWithImages(saved), "off-shelf success");
     }
 
     @PutMapping("/{id}/put-on-shelf")
     @Transactional
     public ApiResponse<ItemResponse> putOnShelf(@PathVariable Long id) {
         String username = currentUser.username();
+
         Item item = items.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("item not found"));
 
-        boolean isOwner = item.getSeller().getUsername().equals(username);
-        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        if (!isOwner && !isAdmin) {
+        if (!canManageItem(item, username)) {
             return ApiResponse.fail("only owner/admin can put on shelf this item");
+        }
+
+        if (Boolean.TRUE.equals(item.getDeleted())) {
+            return ApiResponse.fail("已删除商品不能重新上架");
         }
 
         if (item.getStatus() != ItemStatus.OFF_SHELF) {
             return ApiResponse.fail("only off-shelf item can be put on shelf");
         }
 
-        item.setStatus(ItemStatus.AVAILABLE);
-        Item saved = items.save(item);
-
-        List<String> imageUrls = itemImages.findByItemIdOrderBySortOrderAsc(saved.getId())
-                .stream()
-                .map(ItemImage::getImageUrl)
-                .collect(Collectors.toList());
-
-        ItemResponse res = new ItemResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getDescription(),
-                saved.getPrice(),
-                saved.getStatus(),
-                saved.getCreatedAt(),
-                new ItemResponse.SellerResponse(
-                        saved.getSeller().getId(),
-                        saved.getSeller().getUsername(),
-                        saved.getSeller().getNickname()
-                ),
-                saved.getCoverImageUrl(),
-                imageUrls,
-                saved.getBoard()
+        boolean hasActiveOrder = orders.existsByItem_IdAndStatusIn(
+                item.getId(),
+                List.of(OrderStatus.CREATED, OrderStatus.PAID)
         );
 
-        return ApiResponse.ok(res, "put on shelf success");
+        if (hasActiveOrder) {
+            return ApiResponse.fail("商品存在订单，不能重新上架");
+        }
+
+        item.setStatus(ItemStatus.AVAILABLE);
+        item.setDeleteCategory(ItemDeleteCategory.NONE);
+
+        Item saved = items.save(item);
+
+        return ApiResponse.ok(toResponseWithImages(saved), "put on shelf success");
     }
 
     @DeleteMapping("/{id}")
     @Transactional
     public ApiResponse<Void> delete(@PathVariable Long id) {
         String username = currentUser.username();
+
         Item item = items.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("item not found"));
 
-        boolean isOwner = item.getSeller().getUsername().equals(username);
-        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
-                .getAuthentication().getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        if (!isOwner && !isAdmin) {
+        if (!canManageItem(item, username)) {
             return ApiResponse.fail("only owner/admin can delete");
         }
 
-        // 标记商品为已删除并下架
-        item.setDeleted(true);  // 标记删除
-        item.setStatus(ItemStatus.OFF_SHELF);  // 也可以设置为已下架
-        items.save(item);  // 保存更新的商品
+        if (Boolean.TRUE.equals(item.getDeleted())) {
+            return ApiResponse.fail("商品已经删除");
+        }
 
-        // 删除该商品相关的图片
-        itemImages.deleteByItemId(item.getId());
+        boolean hasUnfinishedOrder = orders.existsByItem_IdAndStatus(
+                item.getId(),
+                OrderStatus.CREATED
+        );
 
+        if (hasUnfinishedOrder) {
+            item.setDeleteCategory(ItemDeleteCategory.ORDER_UNFINISHED);
+            items.save(item);
+            return ApiResponse.fail("商品存在未完成订单，不能删除");
+        }
+
+        boolean hasPaidOrder = orders.existsByItem_IdAndStatus(
+                item.getId(),
+                OrderStatus.PAID
+        );
+
+        boolean hasAnyOrder = orders.existsByItem_Id(item.getId());
+
+        item.setDeleted(true);
+
+        if (hasPaidOrder) {
+            item.setDeleteCategory(ItemDeleteCategory.ORDER_FINISHED);
+            item.setStatus(ItemStatus.SOLD);
+        } else if (hasAnyOrder) {
+            item.setDeleteCategory(ItemDeleteCategory.ORDER_UNFINISHED);
+            item.setStatus(ItemStatus.OFF_SHELF);
+        } else {
+            item.setDeleteCategory(ItemDeleteCategory.NO_ORDER);
+            item.setStatus(ItemStatus.OFF_SHELF);
+        }
+
+        items.save(item);
+
+        // 关键修改：
+        // 不再删除 item_images。
+        // 原因：订单历史、后台审计、商品记录可能仍然需要商品图片。
+        // 图片文件清理后续应通过“未引用图片清理任务”单独处理。
         return ApiResponse.ok(null, "item marked as deleted");
+    }
+
+    private boolean canManageItem(Item item, String username) {
+        boolean isOwner = item.getSeller().getUsername().equals(username);
+
+        boolean isAdmin = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getAuthorities()
+                .stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        return isOwner || isAdmin;
+    }
+
+    private ItemResponse toResponseWithImages(Item item) {
+        List<String> imageUrls = itemImages.findByItemIdOrderBySortOrderAsc(item.getId())
+                .stream()
+                .map(ItemImage::getImageUrl)
+                .collect(Collectors.toList());
+
+        return new ItemResponse(
+                item.getId(),
+                item.getTitle(),
+                item.getDescription(),
+                item.getPrice(),
+                item.getStatus(),
+                item.getCreatedAt(),
+                new ItemResponse.SellerResponse(
+                        item.getSeller().getId(),
+                        item.getSeller().getUsername(),
+                        item.getSeller().getNickname()
+                ),
+                item.getCoverImageUrl(),
+                imageUrls,
+                item.getBoard()
+        );
     }
 }
