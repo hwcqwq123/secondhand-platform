@@ -11,7 +11,7 @@ public final class AdminRole {
 
     /**
      * ADMIN 保留兼容原来的老管理员账号。
-     * SUPER_ADMIN 是新的超级管理员角色。
+     * SUPER_ADMIN 是唯一超级管理员角色，只允许固定账号 admin 拥有。
      */
     public static final String ADMIN = "ADMIN";
     public static final String SUPER_ADMIN = "SUPER_ADMIN";
@@ -45,7 +45,7 @@ public final class AdminRole {
     }
 
     public static boolean isSuperAdminLike(String role) {
-        return ADMIN.equals(role) || SUPER_ADMIN.equals(role);
+        return SUPER_ADMIN.equals(role);
     }
 
     public static boolean isAssignable(String role) {

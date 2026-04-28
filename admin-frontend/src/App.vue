@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!token" class="login-wrap">
+  <div v-if="!token && authMode === 'login'" class="login-wrap">
     <div class="login-card">
       <div class="hd">
         <div class="t">二手交易平台后台</div>
@@ -29,8 +29,86 @@
           <button class="btn primary" style="flex:1" @click="doLogin">登录后台</button>
         </div>
 
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <button class="btn" style="flex:1" @click="goRegister">注册管理员账号</button>
+        </div>
+
         <div class="hint">
-          默认管理员来自后端 application.yml：admin / admin123456
+          固定超级管理员：admin / admin123456；其他管理员可直接注册，无需邀请码。
+        </div>
+
+        <div v-if="err" class="msg">{{ err }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div v-else-if="!token && authMode === 'register'" class="login-wrap">
+    <div class="login-card register-card">
+      <div class="hd">
+        <div class="t">注册管理员账号</div>
+        <div class="small">无需邀请码 · 不能注册超级管理员</div>
+      </div>
+
+      <div class="bd">
+        <div class="row">
+          <input class="input" v-model="registerForm.username" placeholder="管理员账号，不能使用 admin" />
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <input class="input" v-model="registerForm.nickname" placeholder="管理员昵称，可不填" />
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <input
+            class="input"
+            v-model="registerForm.password"
+            placeholder="密码，至少 6 位"
+            type="password"
+          />
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <input
+            class="input"
+            v-model="registerForm.confirmPassword"
+            placeholder="再次输入密码"
+            type="password"
+            @keydown.enter="doAdminRegister"
+          />
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <select class="select register-select" v-model="registerForm.role">
+            <option v-for="r in registerRoleOptions" :key="r.value" :value="r.value">
+              {{ r.label }}
+            </option>
+          </select>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="row">
+          <button class="btn primary" style="flex:1" @click="doAdminRegister">注册并进入后台</button>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="row">
+          <button class="btn" style="flex:1" @click="goLogin">返回登录</button>
+        </div>
+
+        <div class="hint">
+          SUPER_ADMIN 只允许固定账号 admin 拥有；注册页面只能创建普通管理员或分工管理员。
         </div>
 
         <div v-if="err" class="msg">{{ err }}</div>
@@ -413,10 +491,14 @@
                   <div class="small">{{ u.nickname || '-' }}</div>
                 </td>
                 <td>
-                  <select class="select mini role-select" v-model="u._role">
+                  <select
+                    class="select mini role-select"
+                    v-model="u._role"
+                    :disabled="u.username === 'admin'"
+                  >
                     <option value="USER">USER</option>
                     <option value="ADMIN">ADMIN</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                    <option value="SUPER_ADMIN" disabled>SUPER_ADMIN（固定：admin）</option>
                     <option value="ITEM_ADMIN">ITEM_ADMIN</option>
                     <option value="ORDER_ADMIN">ORDER_ADMIN</option>
                     <option value="USER_ADMIN">USER_ADMIN</option>
@@ -434,11 +516,14 @@
                 <td>{{ fmtTime(u.createdAt) }}</td>
                 <td>
                   <div class="right">
-                    <button class="btn" @click="saveUserRole(u)">保存角色</button>
+                    <button class="btn" @click="saveUserRole(u)" :disabled="u.username === 'admin'">
+                      保存角色
+                    </button>
                     <button
                       class="btn danger"
                       v-if="u.status !== 'BANNED'"
                       @click="changeUserStatus(u, 'BANNED')"
+                      :disabled="u.username === 'admin'"
                     >
                       封禁
                     </button>
@@ -521,6 +606,7 @@ import {
   adminListOrders,
   adminListUsers,
   adminLogin,
+  adminRegister,
   adminMarkSold,
   adminOffShelfItem,
   adminStats,
@@ -529,6 +615,7 @@ import {
 } from './api'
 
 const token = ref(localStorage.getItem('admin_token') || '')
+const authMode = ref('login')
 const currentRole = ref(localStorage.getItem('admin_role') || '')
 const currentUsername = ref(localStorage.getItem('admin_username') || '')
 const err = ref('')
@@ -536,6 +623,14 @@ const err = ref('')
 const login = reactive({
   username: 'admin',
   password: ''
+})
+
+const registerForm = reactive({
+  username: '',
+  nickname: '',
+  password: '',
+  confirmPassword: '',
+  role: 'ADMIN'
 })
 
 const activeTab = ref('dashboard')
@@ -568,6 +663,14 @@ const logQuery = reactive({
 })
 
 const adminRoles = ['ADMIN', 'SUPER_ADMIN', 'ITEM_ADMIN', 'ORDER_ADMIN', 'USER_ADMIN', 'SYSTEM_ADMIN']
+
+const registerRoleOptions = [
+  { value: 'ADMIN', label: 'ADMIN（普通管理员）' },
+  { value: 'ITEM_ADMIN', label: 'ITEM_ADMIN（商品管理员）' },
+  { value: 'ORDER_ADMIN', label: 'ORDER_ADMIN（订单管理员）' },
+  { value: 'USER_ADMIN', label: 'USER_ADMIN（用户管理员）' },
+  { value: 'SYSTEM_ADMIN', label: 'SYSTEM_ADMIN（系统/日志管理员）' }
+]
 
 const canItems = computed(() => ['ADMIN', 'SUPER_ADMIN', 'ITEM_ADMIN'].includes(currentRole.value))
 const canOrders = computed(() => ['ADMIN', 'SUPER_ADMIN', 'ORDER_ADMIN'].includes(currentRole.value))
@@ -637,6 +740,26 @@ function getReason(title) {
   return reason.trim()
 }
 
+function saveAdminSession(data) {
+  localStorage.setItem('admin_token', data.token)
+  localStorage.setItem('admin_role', data.role)
+  localStorage.setItem('admin_username', data.username)
+
+  token.value = data.token
+  currentRole.value = data.role
+  currentUsername.value = data.username
+}
+
+function goRegister() {
+  err.value = ''
+  authMode.value = 'register'
+}
+
+function goLogin() {
+  err.value = ''
+  authMode.value = 'login'
+}
+
 async function doLogin() {
   err.value = ''
   try {
@@ -647,14 +770,54 @@ async function doLogin() {
       throw new Error('当前账号不是管理员账号，不能进入后台')
     }
 
-    localStorage.setItem('admin_token', res.data.token)
-    localStorage.setItem('admin_role', res.data.role)
-    localStorage.setItem('admin_username', res.data.username)
+    saveAdminSession(res.data)
+    await loadStats()
+  } catch (e) {
+    err.value = e.message
+  }
+}
 
-    token.value = res.data.token
-    currentRole.value = res.data.role
-    currentUsername.value = res.data.username
+async function doAdminRegister() {
+  err.value = ''
 
+  const username = registerForm.username.trim()
+  const password = registerForm.password
+  const confirmPassword = registerForm.confirmPassword
+
+  if (!username) {
+    err.value = '请输入管理员账号'
+    return
+  }
+
+  if (username.toLowerCase() === 'admin') {
+    err.value = 'admin 是固定超级管理员账号，不能用于注册'
+    return
+  }
+
+  if (!password || password.length < 6) {
+    err.value = '密码至少需要 6 位'
+    return
+  }
+
+  if (password !== confirmPassword) {
+    err.value = '两次输入的密码不一致'
+    return
+  }
+
+  try {
+    const res = await adminRegister({
+      username,
+      nickname: registerForm.nickname.trim() || username,
+      password,
+      role: registerForm.role
+    })
+    if (!res.success) throw new Error(res.message || '注册失败')
+
+    if (!adminRoles.includes(res.data.role)) {
+      throw new Error('注册成功，但该账号不是管理员角色，不能进入后台')
+    }
+
+    saveAdminSession(res.data)
     await loadStats()
   } catch (e) {
     err.value = e.message
@@ -668,6 +831,7 @@ function logout() {
   token.value = ''
   currentRole.value = ''
   currentUsername.value = ''
+  authMode.value = 'login'
   items.value = []
   orders.value = []
   users.value = []
@@ -850,6 +1014,11 @@ function resetUsers() {
 async function saveUserRole(user) {
   err.value = ''
 
+  if (user.username === 'admin') {
+    alert('固定超级管理员 admin 的角色不能修改')
+    return
+  }
+
   if (user._role === user.role) {
     alert('用户角色没有变化')
     return
@@ -874,6 +1043,11 @@ async function saveUserRole(user) {
 
 async function changeUserStatus(user, status) {
   err.value = ''
+
+  if (user.username === 'admin' && status === 'BANNED') {
+    alert('固定超级管理员 admin 不能被封禁')
+    return
+  }
 
   const action = status === 'BANNED' ? '封禁' : '解封'
 

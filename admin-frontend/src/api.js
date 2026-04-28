@@ -21,6 +21,12 @@ export async function adminLogin(username, password) {
   return data
 }
 
+// 新增：管理员注册接口，对应后端 POST /api/auth/admin/register
+export async function adminRegister(payload) {
+  const { data } = await api.post('/auth/admin/register', payload)
+  return data
+}
+
 export async function adminStats() {
   const { data } = await api.get('/admin/stats')
   return data

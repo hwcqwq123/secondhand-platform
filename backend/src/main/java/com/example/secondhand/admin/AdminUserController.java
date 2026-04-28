@@ -1,5 +1,16 @@
 package com.example.secondhand.admin;
 
+import java.util.List;
+
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.secondhand.auth.CurrentUser;
 import com.example.secondhand.config.ApiResponse;
 import com.example.secondhand.item.ItemRepository;
@@ -7,11 +18,8 @@ import com.example.secondhand.order.OrderRepository;
 import com.example.secondhand.user.User;
 import com.example.secondhand.user.UserRepository;
 import com.example.secondhand.user.UserStatus;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import jakarta.persistence.EntityNotFoundException;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -66,8 +74,9 @@ public class AdminUserController {
     /**
      * 用户状态 / 角色管理：
      * 1. USER_ADMIN 可以封禁、解封用户；
-     * 2. 只有 ADMIN / SUPER_ADMIN 可以分配管理员角色；
-     * 3. 管理员不能封禁自己，也不能修改自己的角色。
+     * 2. 只有固定超级管理员 admin 可以分配角色；
+     * 3. 超级管理员只能是唯一固定账号 admin；
+     * 4. 管理员不能封禁自己，也不能修改自己的角色。
      */
     @PutMapping("/{id}")
     @Transactional
@@ -84,6 +93,7 @@ public class AdminUserController {
                 .orElseThrow(() -> new EntityNotFoundException("user not found"));
 
         boolean isSelf = target.getUsername().equals(admin.getUsername());
+        boolean targetIsFixedSuperAdmin = "admin".equalsIgnoreCase(target.getUsername());
 
         String oldRole = target.getRole();
         UserStatus oldStatus = target.getStatus();
@@ -91,6 +101,9 @@ public class AdminUserController {
         if (req.status() != null) {
             if (isSelf && req.status() == UserStatus.BANNED) {
                 return ApiResponse.fail("不能封禁当前登录的管理员账号");
+            }
+            if (targetIsFixedSuperAdmin && req.status() == UserStatus.BANNED) {
+                return ApiResponse.fail("固定超级管理员 admin 不能被封禁");
             }
             target.setStatus(req.status());
         }
@@ -101,12 +114,20 @@ public class AdminUserController {
             }
 
             if (!AdminRole.isSuperAdminLike(admin.getRole())) {
-                return ApiResponse.fail("只有超级管理员可以分配角色");
+                return ApiResponse.fail("只有固定超级管理员可以分配角色");
             }
 
             String newRole = AdminRole.normalize(req.role());
             if (!AdminRole.isAssignable(newRole)) {
                 return ApiResponse.fail("不支持的角色：" + req.role());
+            }
+
+            if (AdminRole.SUPER_ADMIN.equals(newRole) && !targetIsFixedSuperAdmin) {
+                return ApiResponse.fail("超级管理员只能是固定账号 admin，不能分配给其他账号");
+            }
+
+            if (targetIsFixedSuperAdmin && !AdminRole.SUPER_ADMIN.equals(newRole)) {
+                return ApiResponse.fail("固定超级管理员 admin 的角色不能被改为其他角色");
             }
 
             target.setRole(newRole);

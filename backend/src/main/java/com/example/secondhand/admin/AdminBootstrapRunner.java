@@ -20,36 +20,41 @@ public class AdminBootstrapRunner {
             @Value("${app.admin.enabled:true}") boolean enabled,
             @Value("${app.admin.username:admin}") String username,
             @Value("${app.admin.password:admin123456}") String password,
-            @Value("${app.admin.nickname:系统管理员}") String nickname,
-            @Value("${app.admin.role:SUPER_ADMIN}") String role
+            @Value("${app.admin.nickname:系统管理员}") String nickname
     ) {
         return args -> {
             if (!enabled) {
                 return;
             }
 
-            if (username == null || username.isBlank()) {
-                return;
+            String fixedUsername = (username == null || username.isBlank()) ? "admin" : username.trim();
+            String fixedPassword = (password == null || password.isBlank()) ? "admin123456" : password;
+            String fixedNickname = (nickname == null || nickname.isBlank()) ? "系统管理员" : nickname.trim();
+
+            User superAdmin = users.findByUsername(fixedUsername).orElseGet(User::new);
+            boolean isNew = superAdmin.getId() == null;
+
+            superAdmin.setUsername(fixedUsername);
+            superAdmin.setNickname(fixedNickname);
+            superAdmin.setPasswordHash(encoder.encode(fixedPassword));
+            superAdmin.setRole(AdminRole.SUPER_ADMIN);
+            superAdmin.setStatus(UserStatus.NORMAL);
+            users.save(superAdmin);
+
+            users.findAll().stream()
+                    .filter(u -> u.getUsername() != null)
+                    .filter(u -> !fixedUsername.equalsIgnoreCase(u.getUsername()))
+                    .filter(u -> AdminRole.SUPER_ADMIN.equals(AdminRole.normalize(u.getRole())))
+                    .forEach(u -> {
+                        u.setRole(AdminRole.ADMIN);
+                        users.save(u);
+                    });
+
+            if (isNew) {
+                System.out.println("固定超级管理员账号已创建：" + fixedUsername + "，角色：" + AdminRole.SUPER_ADMIN);
+            } else {
+                System.out.println("固定超级管理员账号已校正：" + fixedUsername + "，角色：" + AdminRole.SUPER_ADMIN);
             }
-
-            if (users.existsByUsername(username)) {
-                return;
-            }
-
-            String finalRole = AdminRole.normalize(role);
-            if (!AdminRole.isAdminRole(finalRole)) {
-                finalRole = AdminRole.SUPER_ADMIN;
-            }
-
-            User admin = new User();
-            admin.setUsername(username.trim());
-            admin.setNickname(nickname);
-            admin.setPasswordHash(encoder.encode(password));
-            admin.setRole(finalRole);
-            admin.setStatus(UserStatus.NORMAL);
-
-            users.save(admin);
-            System.out.println("默认管理员账号已创建：" + username + "，角色：" + finalRole);
         };
     }
 }
