@@ -166,12 +166,7 @@
 
           <div class="card-bd">
             <div class="filters">
-              <input
-                class="input"
-                v-model="itemQuery.q"
-                placeholder="标题 / 描述 / 卖家"
-                @keydown.enter="loadItems"
-              />
+              <input class="input" v-model="itemQuery.q" placeholder="标题 / 描述 / 卖家" @keydown.enter="loadItems" />
 
               <select class="select" v-model="itemQuery.status">
                 <option value="">全部状态</option>
@@ -254,27 +249,13 @@
 
                 <td>
                   <div class="right">
-                    <button
-                      class="btn"
-                      @click="offShelfItem(it)"
-                      :disabled="it.deleted || it.status === 'OFF_SHELF'"
-                    >
+                    <button class="btn" @click="offShelfItem(it)" :disabled="it.deleted || it.status === 'OFF_SHELF'">
                       下架
                     </button>
-
-                    <button
-                      class="btn"
-                      @click="markSold(it)"
-                      :disabled="it.deleted || it.status === 'SOLD'"
-                    >
+                    <button class="btn" @click="markSold(it)" :disabled="it.deleted || it.status === 'SOLD'">
                       已售
                     </button>
-
-                    <button
-                      class="btn danger"
-                      @click="deleteItem(it)"
-                      :disabled="it.deleted"
-                    >
+                    <button class="btn danger" @click="deleteItem(it)" :disabled="it.deleted">
                       删除
                     </button>
                   </div>
@@ -297,12 +278,7 @@
 
           <div class="card-bd">
             <div class="filters">
-              <input
-                class="input"
-                v-model="orderQuery.q"
-                placeholder="商品 / 买家 / 卖家"
-                @keydown.enter="loadOrders"
-              />
+              <input class="input" v-model="orderQuery.q" placeholder="商品 / 买家 / 卖家" @keydown.enter="loadOrders" />
 
               <select class="select" v-model="orderQuery.status">
                 <option value="">全部状态</option>
@@ -341,24 +317,19 @@
               <tbody>
               <tr v-for="o in orders" :key="o.id">
                 <td>{{ o.id }}</td>
-
                 <td>
                   <div class="main-text">{{ o.item?.title || '-' }}</div>
                   <div class="small">商品ID：{{ o.item?.id || '-' }}</div>
                 </td>
-
                 <td class="price">¥ {{ o.item?.price || '-' }}</td>
-
                 <td>
                   <span class="badge" :class="orderStatusClass(o.status)">
                     {{ orderStatusText(o.status) }}
                   </span>
                 </td>
-
                 <td>{{ o.buyer?.username || '-' }}</td>
                 <td>{{ o.item?.seller?.username || '-' }}</td>
                 <td>{{ fmtTime(o.createdAt) }}</td>
-
                 <td>
                   <div class="right">
                     <select class="select mini" v-model="o._newStatus">
@@ -366,7 +337,6 @@
                       <option value="PAID">已支付</option>
                       <option value="CANCELED">已取消</option>
                     </select>
-
                     <button class="btn primary" @click="updateOrderStatus(o)">修改</button>
                   </div>
                 </td>
@@ -388,12 +358,7 @@
 
           <div class="card-bd">
             <div class="filters">
-              <input
-                class="input"
-                v-model="userQuery.q"
-                placeholder="用户名 / 昵称"
-                @keydown.enter="loadUsers"
-              />
+              <input class="input" v-model="userQuery.q" placeholder="用户名 / 昵称" @keydown.enter="loadUsers" />
 
               <select class="select" v-model="userQuery.role">
                 <option value="">全部角色</option>
@@ -430,7 +395,7 @@
               <tr>
                 <th style="width:70px">ID</th>
                 <th>用户</th>
-                <th style="width:190px">角色</th>
+                <th style="width:150px">角色</th>
                 <th style="width:110px">状态</th>
                 <th style="width:110px">发布商品</th>
                 <th style="width:110px">买入订单</th>
@@ -443,85 +408,44 @@
               <tbody>
               <tr v-for="u in users" :key="u.id">
                 <td>{{ u.id }}</td>
-
                 <td>
                   <div class="main-text">{{ u.username }}</div>
                   <div class="small">{{ u.nickname || '-' }}</div>
                 </td>
-
                 <td>
-                  <select
-                    class="select mini role-select"
-                    v-model="u._role"
-                    :disabled="u.role === 'SUPER_ADMIN' || u.username === currentUsername"
-                  >
-                    <option
-                      v-if="u.role === 'SUPER_ADMIN'"
-                      value="SUPER_ADMIN"
-                    >
-                      SUPER_ADMIN（唯一）
-                    </option>
-
+                  <select class="select mini role-select" v-model="u._role">
                     <option value="USER">USER</option>
                     <option value="ADMIN">ADMIN</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                     <option value="ITEM_ADMIN">ITEM_ADMIN</option>
                     <option value="ORDER_ADMIN">ORDER_ADMIN</option>
                     <option value="USER_ADMIN">USER_ADMIN</option>
                     <option value="SYSTEM_ADMIN">SYSTEM_ADMIN</option>
                   </select>
-
-                  <div
-                    v-if="u.role === 'SUPER_ADMIN'"
-                    class="small"
-                    style="margin-top:4px;color:#b45309;"
-                  >
-                    唯一超级管理员，不可修改
-                  </div>
-
-                  <div
-                    v-if="u.username === currentUsername"
-                    class="small"
-                    style="margin-top:4px;color:#6b7280;"
-                  >
-                    当前登录账号不可修改自身角色
-                  </div>
                 </td>
-
                 <td>
                   <span class="badge" :class="u.status === 'BANNED' ? 'danger-badge' : 'ok'">
                     {{ u.status === 'BANNED' ? '封禁' : '正常' }}
                   </span>
                 </td>
-
                 <td>{{ u.itemCount }}</td>
                 <td>{{ u.buyOrderCount }}</td>
                 <td>{{ u.sellOrderCount }}</td>
                 <td>{{ fmtTime(u.createdAt) }}</td>
-
                 <td>
                   <div class="right">
-                    <button
-                      class="btn"
-                      @click="saveUserRole(u)"
-                      :disabled="u.role === 'SUPER_ADMIN' || u.username === currentUsername || u._role === u.role"
-                    >
-                      保存角色
-                    </button>
-
+                    <button class="btn" @click="saveUserRole(u)">保存角色</button>
                     <button
                       class="btn danger"
                       v-if="u.status !== 'BANNED'"
                       @click="changeUserStatus(u, 'BANNED')"
-                      :disabled="u.role === 'SUPER_ADMIN' || u.username === currentUsername"
                     >
                       封禁
                     </button>
-
                     <button
                       class="btn"
                       v-else
                       @click="changeUserStatus(u, 'NORMAL')"
-                      :disabled="u.role === 'SUPER_ADMIN' || u.username === currentUsername"
                     >
                       解封
                     </button>
@@ -545,13 +469,7 @@
 
           <div class="card-bd">
             <div class="filters">
-              <input
-                class="input"
-                v-model="logQuery.q"
-                placeholder="管理员 / 动作 / 对象 / 原因"
-                @keydown.enter="loadLogs"
-              />
-
+              <input class="input" v-model="logQuery.q" placeholder="管理员 / 动作 / 对象 / 原因" @keydown.enter="loadLogs" />
               <button class="btn primary" @click="loadLogs">查询</button>
               <button class="btn" @click="resetLogs">重置</button>
             </div>
@@ -649,30 +567,12 @@ const logQuery = reactive({
   q: ''
 })
 
-const adminRoles = [
-  'ADMIN',
-  'SUPER_ADMIN',
-  'ITEM_ADMIN',
-  'ORDER_ADMIN',
-  'USER_ADMIN',
-  'SYSTEM_ADMIN'
-]
+const adminRoles = ['ADMIN', 'SUPER_ADMIN', 'ITEM_ADMIN', 'ORDER_ADMIN', 'USER_ADMIN', 'SYSTEM_ADMIN']
 
-const canItems = computed(() =>
-  ['ADMIN', 'SUPER_ADMIN', 'ITEM_ADMIN'].includes(currentRole.value)
-)
-
-const canOrders = computed(() =>
-  ['ADMIN', 'SUPER_ADMIN', 'ORDER_ADMIN'].includes(currentRole.value)
-)
-
-const canUsers = computed(() =>
-  ['ADMIN', 'SUPER_ADMIN', 'USER_ADMIN'].includes(currentRole.value)
-)
-
-const canLogs = computed(() =>
-  ['ADMIN', 'SUPER_ADMIN', 'SYSTEM_ADMIN'].includes(currentRole.value)
-)
+const canItems = computed(() => ['ADMIN', 'SUPER_ADMIN', 'ITEM_ADMIN'].includes(currentRole.value))
+const canOrders = computed(() => ['ADMIN', 'SUPER_ADMIN', 'ORDER_ADMIN'].includes(currentRole.value))
+const canUsers = computed(() => ['ADMIN', 'SUPER_ADMIN', 'USER_ADMIN'].includes(currentRole.value))
+const canLogs = computed(() => ['ADMIN', 'SUPER_ADMIN', 'SYSTEM_ADMIN'].includes(currentRole.value))
 
 const pageTitle = computed(() => {
   if (activeTab.value === 'dashboard') return '数据统计'
@@ -730,24 +630,18 @@ function orderStatusClass(s) {
 function getReason(title) {
   const reason = window.prompt(`${title}\n请输入操作原因：`)
   if (reason === null) return null
-
   if (!reason.trim()) {
     alert('重要操作必须填写原因')
     return null
   }
-
   return reason.trim()
 }
 
 async function doLogin() {
   err.value = ''
-
   try {
     const res = await adminLogin(login.username, login.password)
-
-    if (!res.success) {
-      throw new Error(res.message || '登录失败')
-    }
+    if (!res.success) throw new Error(res.message || '登录失败')
 
     if (!adminRoles.includes(res.data.role)) {
       throw new Error('当前账号不是管理员账号，不能进入后台')
@@ -771,11 +665,9 @@ function logout() {
   localStorage.removeItem('admin_token')
   localStorage.removeItem('admin_role')
   localStorage.removeItem('admin_username')
-
   token.value = ''
   currentRole.value = ''
   currentUsername.value = ''
-
   items.value = []
   orders.value = []
   users.value = []
@@ -797,14 +689,9 @@ async function loadCurrentTab() {
 
 async function loadStats() {
   err.value = ''
-
   try {
     const res = await adminStats()
-
-    if (!res.success) {
-      throw new Error(res.message || '统计加载失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '统计加载失败')
     Object.assign(stats, res.data || {})
   } catch (e) {
     err.value = e.message
@@ -813,18 +700,13 @@ async function loadStats() {
 
 async function loadItems() {
   err.value = ''
-
   try {
     const res = await adminListItems({
       q: itemQuery.q || undefined,
       status: itemQuery.status || undefined,
       includeDeleted: itemQuery.includeDeleted
     })
-
-    if (!res.success) {
-      throw new Error(res.message || '商品加载失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '商品加载失败')
     items.value = res.data || []
   } catch (e) {
     err.value = e.message
@@ -842,17 +724,12 @@ async function markSold(item) {
   err.value = ''
 
   if (!window.confirm(`确定要把商品「${item.title}」强制标记为已售吗？`)) return
-
   const reason = getReason('强制标记已售属于高风险操作')
   if (!reason) return
 
   try {
     const res = await adminMarkSold(item.id, reason)
-
-    if (!res.success) {
-      throw new Error(res.message || '操作失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '操作失败')
     await loadItems()
     await loadStats()
   } catch (e) {
@@ -864,17 +741,12 @@ async function offShelfItem(item) {
   err.value = ''
 
   if (!window.confirm(`确定要强制下架商品「${item.title}」吗？`)) return
-
   const reason = getReason('强制下架属于高风险操作')
   if (!reason) return
 
   try {
     const res = await adminOffShelfItem(item.id, reason)
-
-    if (!res.success) {
-      throw new Error(res.message || '操作失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '操作失败')
     await loadItems()
     await loadStats()
   } catch (e) {
@@ -890,17 +762,12 @@ async function deleteItem(item) {
     : `商品「${item.title}」无订单，后端会物理删除。确定继续吗？`
 
   if (!window.confirm(tip)) return
-
   const reason = getReason('删除商品属于高风险操作')
   if (!reason) return
 
   try {
     const res = await adminDeleteItem(item.id, reason)
-
-    if (!res.success) {
-      throw new Error(res.message || '删除失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '删除失败')
     await loadItems()
     await loadStats()
   } catch (e) {
@@ -910,16 +777,12 @@ async function deleteItem(item) {
 
 async function loadOrders() {
   err.value = ''
-
   try {
     const res = await adminListOrders({
       q: orderQuery.q || undefined,
       status: orderQuery.status || undefined
     })
-
-    if (!res.success) {
-      throw new Error(res.message || '订单加载失败')
-    }
+    if (!res.success) throw new Error(res.message || '订单加载失败')
 
     orders.value = (res.data || []).map(o => ({
       ...o,
@@ -945,17 +808,12 @@ async function updateOrderStatus(order) {
   }
 
   if (!window.confirm(`确定要把订单 #${order.id} 从 ${orderStatusText(order.status)} 改为 ${orderStatusText(order._newStatus)} 吗？`)) return
-
   const reason = getReason('修改订单状态属于高风险操作')
   if (!reason) return
 
   try {
     const res = await adminUpdateOrderStatus(order.id, order._newStatus, reason)
-
-    if (!res.success) {
-      throw new Error(res.message || '订单状态修改失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '订单状态修改失败')
     await loadOrders()
     await loadStats()
   } catch (e) {
@@ -965,17 +823,13 @@ async function updateOrderStatus(order) {
 
 async function loadUsers() {
   err.value = ''
-
   try {
     const res = await adminListUsers({
       q: userQuery.q || undefined,
       role: userQuery.role || undefined,
       status: userQuery.status || undefined
     })
-
-    if (!res.success) {
-      throw new Error(res.message || '用户加载失败')
-    }
+    if (!res.success) throw new Error(res.message || '用户加载失败')
 
     users.value = (res.data || []).map(u => ({
       ...u,
@@ -996,28 +850,12 @@ function resetUsers() {
 async function saveUserRole(user) {
   err.value = ''
 
-  if (user.username === currentUsername.value) {
-    alert('不能修改当前登录账号自己的角色')
-    return
-  }
-
-  if (user.role === 'SUPER_ADMIN') {
-    alert('SUPER_ADMIN 是系统唯一超级管理员，不能修改其角色')
-    return
-  }
-
-  if (user._role === 'SUPER_ADMIN') {
-    alert('SUPER_ADMIN 账号唯一，不能手动分配')
-    return
-  }
-
   if (user._role === user.role) {
     alert('用户角色没有变化')
     return
   }
 
   if (!window.confirm(`确定要把用户「${user.username}」的角色从 ${user.role} 改为 ${user._role} 吗？`)) return
-
   const reason = getReason('修改用户角色属于高风险操作')
   if (!reason) return
 
@@ -1026,11 +864,7 @@ async function saveUserRole(user) {
       role: user._role,
       reason
     })
-
-    if (!res.success) {
-      throw new Error(res.message || '角色修改失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '角色修改失败')
     await loadUsers()
     await loadStats()
   } catch (e) {
@@ -1041,20 +875,9 @@ async function saveUserRole(user) {
 async function changeUserStatus(user, status) {
   err.value = ''
 
-  if (user.username === currentUsername.value) {
-    alert('不能修改当前登录账号自己的状态')
-    return
-  }
-
-  if (user.role === 'SUPER_ADMIN') {
-    alert('SUPER_ADMIN 是系统唯一超级管理员，不能修改其账号状态')
-    return
-  }
-
   const action = status === 'BANNED' ? '封禁' : '解封'
 
   if (!window.confirm(`确定要${action}用户「${user.username}」吗？`)) return
-
   const reason = getReason(`${action}用户属于高风险操作`)
   if (!reason) return
 
@@ -1063,11 +886,7 @@ async function changeUserStatus(user, status) {
       status,
       reason
     })
-
-    if (!res.success) {
-      throw new Error(res.message || `${action}失败`)
-    }
-
+    if (!res.success) throw new Error(res.message || `${action}失败`)
     await loadUsers()
     await loadStats()
   } catch (e) {
@@ -1077,17 +896,12 @@ async function changeUserStatus(user, status) {
 
 async function loadLogs() {
   err.value = ''
-
   try {
     const res = await adminListLogs({
       q: logQuery.q || undefined,
       limit: 200
     })
-
-    if (!res.success) {
-      throw new Error(res.message || '日志加载失败')
-    }
-
+    if (!res.success) throw new Error(res.message || '日志加载失败')
     logs.value = res.data || []
   } catch (e) {
     err.value = e.message
