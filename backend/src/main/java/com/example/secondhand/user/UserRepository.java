@@ -15,6 +15,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   long countByStatus(UserStatus status);
 
+  /**
+   * 用于限制 SUPER_ADMIN 唯一。
+   */
+  long countByRole(String role);
+
+  Optional<User> findFirstByRole(String role);
+
   @Query("""
           select u from User u
           where (:keyword is null

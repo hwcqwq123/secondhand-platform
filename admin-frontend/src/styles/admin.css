@@ -23,9 +23,26 @@
     --sidebarActiveBar: #ff5000;
 }
 
-*{box-sizing:border-box}
+*{
+    box-sizing:border-box;
+}
 
-html,body{height:100%}
+html,
+body,
+#app{
+    width:100%;
+    min-height:100%;
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--text);
+    color-scheme: light;
+}
+
+html,
+body{
+    height:100%;
+}
 
 body{
     margin:0;
@@ -39,8 +56,25 @@ a{
     text-decoration:none;
 }
 
-button,input,select{
+button,
+input,
+select,
+textarea{
     font:inherit;
+}
+
+/* 关键修复：防止 Vue 默认样式或浏览器暗色模式导致白字白底 */
+button,
+input,
+select,
+textarea{
+    color:#111827;
+    background-color:#ffffff;
+}
+
+select option{
+    color:#111827;
+    background:#ffffff;
 }
 
 .layout{
@@ -137,6 +171,7 @@ button,input,select{
 
 .topbar .title{
     font-weight:900;
+    color:#111827;
 }
 
 .topbar .meta{
@@ -179,6 +214,7 @@ button,input,select{
 .card-hd h3{
     margin:0;
     font-size:14px;
+    color:#111827;
 }
 
 .card-bd{
@@ -192,13 +228,27 @@ button,input,select{
     align-items:center;
 }
 
-.input, .select{
+/* 输入框、下拉框修复 */
+.input,
+.select{
     height:36px;
     padding:0 10px;
-    border:1px solid var(--border);
+    border:1px solid #d1d5db;
     border-radius:10px;
-    background:#fff;
+    background:#ffffff;
+    color:#111827;
     outline:none;
+    font-weight:500;
+}
+
+.input::placeholder{
+    color:#9ca3af;
+}
+
+.input:focus,
+.select:focus{
+    border-color:var(--brand);
+    box-shadow:0 0 0 3px rgba(255,80,0,.12);
 }
 
 .input{
@@ -207,6 +257,8 @@ button,input,select{
 
 .select{
     width:160px;
+    appearance:auto;
+    -webkit-appearance:auto;
 }
 
 .select.mini{
@@ -225,26 +277,52 @@ button,input,select{
     color:var(--muted);
 }
 
+.check input{
+    accent-color:var(--brand);
+}
+
+/* 普通按钮：刷新、重置等 */
 .btn{
     height:36px;
     padding:0 12px;
-    border:1px solid var(--border);
-    background:#fff;
+    border:1px solid #d1d5db;
+    background:#ffffff;
+    color:#374151;
     border-radius:10px;
     cursor:pointer;
+    font-weight:600;
+    transition:all .15s ease;
 }
 
+.btn:hover{
+    background:#f9fafb;
+    border-color:#9ca3af;
+}
+
+/* 主按钮：查询、登录、修改、保存等 */
 .btn.primary{
     background: linear-gradient(180deg, var(--brand2), var(--brand));
     border-color: var(--brand);
-    color:#fff;
+    color:#ffffff;
     font-weight:700;
 }
 
+.btn.primary:hover{
+    background: linear-gradient(180deg, #ff8a4d, #e64600);
+    border-color:#e64600;
+}
+
+/* 危险按钮：删除、封禁、退出等 */
 .btn.danger{
-    background: #fff;
-    border-color: rgba(239,68,68,.35);
-    color: var(--danger);
+    background:#fff1f2;
+    border-color:#fecaca;
+    color:#dc2626;
+    font-weight:700;
+}
+
+.btn.danger:hover{
+    background:#ffe4e6;
+    border-color:#fca5a5;
 }
 
 .btn:disabled{
@@ -265,12 +343,14 @@ button,input,select{
     min-width:1100px;
 }
 
-.table th,.table td{
+.table th,
+.table td{
     text-align:left;
     padding:12px 12px;
     border-bottom:1px solid var(--border);
     font-size:14px;
     vertical-align:middle;
+    color:#111827;
 }
 
 .table th{
@@ -353,6 +433,7 @@ button,input,select{
 
 .main-text{
     font-weight:800;
+    color:#111827;
 }
 
 .ellipsis{
@@ -402,6 +483,7 @@ button,input,select{
 .login-card .hd .t{
     font-weight:900;
     font-size:18px;
+    color:#111827;
 }
 
 .login-card .bd{
@@ -462,6 +544,24 @@ button,input,select{
     gap:10px;
     flex-wrap:wrap;
     margin-top:12px;
+}
+
+/* 兜底修复：防止外部 style.css 把 #app 居中或限制宽度 */
+#app{
+    max-width:none !important;
+    text-align:left !important;
+}
+
+/* 兜底修复：防止 Vite 默认按钮样式影响后台 */
+button{
+    font-family:inherit !important;
+}
+
+/* 兜底修复：防止下拉框白字白底 */
+select,
+select option{
+    color:#111827 !important;
+    background:#ffffff !important;
 }
 
 @media (max-width: 1100px){
