@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.secondhand.audit.AuditDecision;
+import com.example.secondhand.audit.ContentAuditService;
 import com.example.secondhand.auth.CurrentUser;
 import com.example.secondhand.behavior.UserBehavior;
 import com.example.secondhand.behavior.UserBehaviorRepository;
@@ -39,13 +41,17 @@ public class ItemController {
     private final UserBehaviorRepository behaviors;
     private final OrderRepository orders;
 
+    // 新增：内容审核服务，用于商品标题和商品描述审核
+    private final ContentAuditService contentAuditService;
+
     public ItemController(
             ItemRepository items,
             ItemImageRepository itemImages,
             UserRepository users,
             CurrentUser currentUser,
             UserBehaviorRepository behaviors,
-            OrderRepository orders
+            OrderRepository orders,
+            ContentAuditService contentAuditService
     ) {
         this.items = items;
         this.itemImages = itemImages;
@@ -53,6 +59,7 @@ public class ItemController {
         this.currentUser = currentUser;
         this.behaviors = behaviors;
         this.orders = orders;
+        this.contentAuditService = contentAuditService;
     }
 
     @GetMapping
@@ -171,6 +178,12 @@ public class ItemController {
         User seller = users.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("seller not found"));
 
+        // 新增：发布商品前审核标题和描述
+        AuditDecision audit = contentAuditService.auditItem(req.getTitle(), req.getDescription());
+        if (!audit.allowed()) {
+            return ApiResponse.fail("内容审核未通过：" + audit.reason());
+        }
+
         Item item = new Item();
         item.setTitle(req.getTitle());
         item.setDescription(req.getDescription());
@@ -237,6 +250,12 @@ public class ItemController {
 
         if (item.getStatus() == ItemStatus.SOLD) {
             return ApiResponse.fail("已售出商品不能修改");
+        }
+
+        // 新增：编辑商品前审核标题和描述
+        AuditDecision audit = contentAuditService.auditItem(req.getTitle(), req.getDescription());
+        if (!audit.allowed()) {
+            return ApiResponse.fail("内容审核未通过：" + audit.reason());
         }
 
         item.setTitle(req.getTitle());
@@ -436,10 +455,6 @@ public class ItemController {
 
         items.save(item);
 
-        // 关键修改：
-        // 不再删除 item_images。
-        // 原因：订单历史、后台审计、商品记录可能仍然需要商品图片。
-        // 图片文件清理后续应通过“未引用图片清理任务”单独处理。
         return ApiResponse.ok(null, "item marked as deleted");
     }
 

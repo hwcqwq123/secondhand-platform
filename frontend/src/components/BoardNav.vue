@@ -1,32 +1,22 @@
 <template>
-  <div class="card board-nav-card">
-    <div class="sidebar-section">
-      <div class="sidebar-title">板块分类</div>
-
-      <div class="board-nav-list">
-        <button
-            v-for="b in boards"
-            :key="b.key"
-            class="board-nav-item"
-            :class="{ active: b.key === active }"
-            @click="$emit('select', b.key)"
-        >
-          <span class="board-nav-dot"></span>
-          <span>{{ b.name }}</span>
-        </button>
-      </div>
-    </div>
+  <div class="card board-card">
+    <div class="sidebar-title">商品板块</div>
+    <button
+        v-for="board in boards"
+        :key="board.key"
+        class="board-btn"
+        :class="{ active: board.key === active }"
+        @click="$emit('select', board.key)"
+    >
+      {{ board.name }}
+    </button>
   </div>
 </template>
 
 <script setup>
-import '../styles/board-nav.css'
-
-
 defineProps({
-  boards: { type: Array, required: true },
-  active: { type: String, required: true }
+  boards: { type: Array, default: () => [] },
+  active: { type: String, default: 'all' }
 })
-
 defineEmits(['select'])
 </script>

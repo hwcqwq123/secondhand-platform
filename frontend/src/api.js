@@ -46,7 +46,6 @@ export async function uploadImage(file) {
     return data
 }
 
-
 export async function createOrder(itemId) {
     const { data } = await api.post('/orders', { itemId })
     return data
@@ -111,5 +110,43 @@ export async function offShelfItem(id) {
 
 export async function putOnShelfItem(id) {
     const { data } = await api.put(`/items/${id}/put-on-shelf`)
+    return data
+}
+
+// 新增：根据商品创建或打开聊天会话
+export async function openChatForItem(itemId) {
+    const { data } = await api.post(`/chats/items/${itemId}`)
+    return data
+}
+
+// 新增：查看我的聊天会话
+export async function listChatConversations() {
+    const { data } = await api.get('/chats')
+    return data
+}
+
+// 新增：查看某个会话的消息
+export async function listChatMessages(conversationId) {
+    const { data } = await api.get(`/chats/${conversationId}/messages`)
+    return data
+}
+
+// 新增：发送聊天消息
+export async function sendChatMessage(conversationId, content) {
+    const { data } = await api.post(`/chats/${conversationId}/messages`, { content })
+    return data
+}
+
+// 新增：标记会话已读
+export async function markChatRead(conversationId) {
+    const { data } = await api.put(`/chats/${conversationId}/read`)
+    return data
+}
+
+// 新增：AI 客服大模型问答接口，对应后端 POST /api/ai/chat
+// message：用户当前输入
+// history：最近几轮上下文，可不传
+export async function aiChat(message, history = []) {
+    const { data } = await api.post('/ai/chat', { message, history })
     return data
 }

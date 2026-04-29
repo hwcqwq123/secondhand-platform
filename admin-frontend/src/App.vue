@@ -3,7 +3,7 @@
     <div class="login-card">
       <div class="hd">
         <div class="t">二手交易平台后台</div>
-        <div class="small">Admin Console · 权限分级管理</div>
+        <div class="small">Admin Console</div>
       </div>
 
       <div class="bd">

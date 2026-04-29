@@ -41,3 +41,23 @@ app:
     password: admin123456
     nickname: 系统管理员
     role: SUPER_ADMIN
+
+  # 新增：本地 AI 内容审核配置
+  audit:
+    enabled: true
+    service-url: http://127.0.0.1:8001
+    timeout-ms: 5000
+    base-url: http://127.0.0.1:8001
+
+    # 新增：
+    # true 表示本地开发时，如果 Python 审核服务没启动，商品仍然可以发布；
+    # 上线后建议改成 false。
+    fail-open: true
+
+  ai:
+    enabled: true
+    provider: ollama-local
+    base-url: http://127.0.0.1:11434/v1
+    api-key: ""
+    model: qwen3:1.7b
+    timeout-ms: 120000

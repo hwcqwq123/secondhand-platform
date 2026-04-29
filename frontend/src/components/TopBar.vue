@@ -1,84 +1,33 @@
 <template>
-  <div class="topbar">
-    <div class="container topbar-inner">
-      <div class="logo" @click="$emit('goHome')">校园二手论坛</div>
-
-      <div class="search">
-        <input
-            v-model="q"
-            placeholder="搜索：耳机 / 书籍 / 显示器..."
-            @keydown.enter="emitSearch"
-        />
-        <button class="btn" @click="emitSearch">搜索</button>
-      </div>
-
-      <div class="user-actions">
-        <template v-if="!token">
-          <button class="btn primary" @click="$emit('openAuth')">登录 / 注册</button>
-        </template>
-
-        <template v-else>
-          <button class="btn primary" @click="$emit('goPost')">发帖</button>
-
-          <div class="user-mini" @click="$emit('goProfile')">
-            <img
-                v-if="userInfo?.avatarUrl"
-                :src="userInfo.avatarUrl"
-                alt="avatar"
-                class="avatar"
-            />
-            <div v-else class="avatar avatar-fallback">
-              {{ displayName.slice(0, 1) || '用' }}
-            </div>
-
-            <span class="user-name">{{ displayName }}</span>
-          </div>
-          <button class="btn" @click="$emit('goMyItems')">我的发布</button>
-          <button class="btn" @click="$emit('goOrders')">我的订单</button>
-          <button class="btn" @click="$emit('logout')">退出</button>
-        </template>
-      </div>
+  <header class="topbar">
+    <div class="brand" @click="$emit('goHome')">校园二手交易平台</div>
+    <div class="search-box">
+      <input
+          :value="modelValue"
+          placeholder="搜索商品，如：耳机、教材、自行车"
+          @input="$emit('update:modelValue', $event.target.value)"
+          @keyup.enter="$emit('search')"
+      />
+      <button class="btn primary" @click="$emit('search')">搜索</button>
     </div>
-  </div>
+    <nav class="nav-actions">
+      <button class="btn" @click="$emit('goHome')">首页</button>
+      <button class="btn" @click="$emit('goPost')">发布商品</button>
+      <button class="btn" @click="$emit('goMyItems')">我的发布</button>
+      <button class="btn" @click="$emit('goOrders')">我的订单</button>
+      <button class="btn" @click="$emit('goChats')">我的消息</button>
+      <button class="btn" @click="$emit('goProfile')">个人中心</button>
+      <button v-if="!token" class="btn primary" @click="$emit('openAuth')">登录/注册</button>
+      <button v-else class="btn danger" @click="$emit('logout')">退出</button>
+    </nav>
+  </header>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
-import '../styles/topbar.css'
-
-const props = defineProps({
-  modelValue: String,
-  token: String,
-  userInfo: {
-    type: Object,
-    default: () => ({})
-  }
+defineProps({
+  modelValue: { type: String, default: '' },
+  token: { type: String, default: '' },
+  userInfo: { type: Object, default: () => ({}) }
 })
-
-const emit = defineEmits([
-  'update:modelValue',
-  'search',
-  'openAuth',
-  'logout',
-  'goOrders',
-  'goProfile',
-  'goHome',
-  'goPost',
-  'goMyItems'
-])
-
-const q = ref(props.modelValue || '')
-
-watch(() => props.modelValue, (v) => {
-  q.value = v || ''
-})
-
-const displayName = computed(() => {
-  return props.userInfo?.nickname || props.userInfo?.username || '用户'
-})
-
-function emitSearch() {
-  emit('update:modelValue', q.value)
-  emit('search', q.value)
-}
+defineEmits(['update:modelValue', 'search', 'openAuth', 'logout', 'goOrders', 'goProfile', 'goHome', 'goPost', 'goMyItems', 'goChats'])
 </script>

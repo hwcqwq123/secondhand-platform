@@ -1,4 +1,5 @@
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminBootstrapRunner.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminCreateAdminRequest.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminItemController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminItemResponse.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminLogController.java
@@ -8,6 +9,7 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminO
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminOperationLogService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminOrderController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminReasonRequest.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminRegisterRequest.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminRole.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminStatsController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminStatsResponse.java
@@ -15,6 +17,11 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminU
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminUpdateUserRequest.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminUserController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\admin\AdminUserResponse.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\audit\AuditClientConfig.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\audit\AuditDecision.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\audit\AuditRemoteRequest.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\audit\AuditRemoteResponse.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\audit\ContentAuditService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\auth\AppUserDetailsService.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\auth\AuthController.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\auth\AuthResponse.java
@@ -26,6 +33,14 @@ E:\secondhand-platform\backend\src\main\java\com\example\secondhand\auth\Registe
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\auth\SecurityConfig.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\behavior\UserBehavior.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\behavior\UserBehaviorRepository.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatController.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatConversation.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatConversationRepository.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatConversationResponse.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatMessage.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatMessageRepository.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatMessageResponse.java
+E:\secondhand-platform\backend\src\main\java\com\example\secondhand\chat\ChatSendMessageRequest.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\ApiResponse.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\GlobalExceptionHandler.java
 E:\secondhand-platform\backend\src\main\java\com\example\secondhand\config\HomeController.java

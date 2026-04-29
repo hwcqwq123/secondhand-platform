@@ -11,6 +11,7 @@
       @goHome="switchView('home')"
       @goPost="handleGoPost"
       @goMyItems="switchView('myItems')"
+      @goChats="switchView('chats')"
   />
 
   <!-- 首页 -->
@@ -56,14 +57,21 @@
                   style="cursor:pointer; width:200px; height:300px; border:1px solid #ddd; border-radius:8px; text-align:center;"
                   @click="openDetail(r.id)"
               >
-                <img
-                    :src="r.coverImageUrl"
-                    alt="商品封面"
-                    style="width:100%; height:150px; object-fit:cover; border-radius:8px;"
-                />
+                <div style="width:100%; height:150px; border-radius:8px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center;">
+                  <img
+                      v-if="getItemCover(r)"
+                      :src="getItemCover(r)"
+                      alt="商品封面"
+                      style="width:100%; height:150px; object-fit:cover;"
+                  />
+                  <span v-else style="color:#999;">图片</span>
+                </div>
+
                 <div class="card-content" style="padding:10px;">
-                  <h3>{{ r.title }}</h3>
-                  <p>¥ {{ r.price }}</p>
+                  <h3 style="font-size:15px; line-height:1.4; height:42px; overflow:hidden;">
+                    {{ r.title }}
+                  </h3>
+                  <p style="color:#d03050; font-weight:800;">¥ {{ r.price }}</p>
                 </div>
               </div>
 
@@ -86,7 +94,7 @@
               <div class="kv"><span>登录</span><span>{{ token ? '已登录' : '未登录' }}</span></div>
               <div class="kv"><span>板块</span><span>{{ boardsMap[activeBoard] }}</span></div>
               <div class="kv"><span>关键词</span><span>{{ q || '-' }}</span></div>
-              <div class="kv"><span>筛选</span><span>{{ status || '全部' }}</span></div>
+              <div class="kv"><span>筛选</span><span>{{ statusText }}</span></div>
             </div>
           </div>
         </div>
@@ -94,9 +102,9 @@
     </div>
   </template>
 
-  <!-- 发布商品 -->
+  <!-- 发布商品 / 编辑商品 -->
   <div v-if="currentView === 'post'" class="container page-section">
-    <div class="page-title">发布商品</div>
+    <div class="page-title">{{ isEditMode ? '编辑商品' : '发布商品' }}</div>
 
     <div class="card" style="max-width: 820px; margin: 0 auto;">
       <div class="list-head">
@@ -200,7 +208,7 @@
     <div class="card">
       <div class="list-head">
         <div class="title">订单列表</div>
-        <button class="btn" @click="loadOrders">刷新</button>
+        <button class="btn" @click="refreshOrders">刷新</button>
       </div>
 
       <div class="panel-actions" style="margin-bottom: 14px;">
@@ -239,7 +247,7 @@
                 卖家：{{ order.item?.seller?.nickname || order.item?.seller?.username || '-' }}
               </div>
               <div style="margin-top:6px; color:#888; font-size:12px;">
-                订单状态：{{ order.status }} ｜ 商品状态：{{ order.item?.status || '-' }}
+                订单状态：{{ getOrderStatusLabel(order) }} ｜ 商品状态：{{ order.item?.status || '-' }}
               </div>
 
               <div
@@ -468,6 +476,14 @@
     </div>
   </div>
 
+  <!-- 用户聊天页：页面一级，不放入详情弹窗 -->
+  <div v-if="currentView === 'chats'" class="container page-section">
+    <ChatPage
+        :initialConversationId="chatInitialConversationId"
+        @openDetail="openDetail"
+    />
+  </div>
+
   <!-- 商品详情弹窗 -->
   <div
       v-if="showDetail"
@@ -476,15 +492,15 @@
     <div class="card" style="width:720px; max-width: calc(100vw - 24px);">
       <div class="list-head">
         <div class="title">帖子详情</div>
-        <button class="btn" @click="showDetail = false">关闭</button>
+        <button class="btn" @click="closeDetail">关闭</button>
       </div>
 
       <div style="padding:14px;">
         <div style="display:flex; gap:14px; flex-wrap:wrap;">
           <div class="thumb" style="width:180px; height:180px; overflow:hidden;">
             <img
-                v-if="detail?.imageUrls && detail.imageUrls.length > 0"
-                :src="detail.imageUrls[0]"
+                v-if="getItemCover(detail)"
+                :src="getItemCover(detail)"
                 alt="商品图片"
                 style="width:100%; height:100%; object-fit:cover;"
             />
@@ -506,6 +522,14 @@
                   :disabled="!detail || detail.status !== 'AVAILABLE'"
               >
                 {{ token ? '下单' : '登录后下单' }}
+              </button>
+
+              <button
+                  class="btn"
+                  @click="openChatByItem(detail)"
+                  :disabled="!detail || detail?.seller?.id === profile.id"
+              >
+                {{ detail?.seller?.id === profile.id ? '不能联系自己' : '联系卖家' }}
               </button>
             </div>
           </div>
@@ -581,9 +605,10 @@
     </div>
   </div>
 
-  <AiChatWidget @openDetail="openDetail" />
+  <!-- AI 客服入口：登录后显示 -->
+  <AiChatWidget v-if="token" @openDetail="openDetail" />
 
-  <!-- 登录弹窗：未登录下单、点击登录/注册时显示 -->
+  <!-- 登录弹窗 -->
   <div
       v-if="showAuthDialog"
       style="position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:60; padding:16px;"
@@ -621,7 +646,12 @@
 
           <div class="grid">
             <input v-model="auth.username" placeholder="请输入用户名" />
-            <input v-model="auth.password" placeholder="请输入密码" type="password" />
+            <input
+                v-model="auth.password"
+                placeholder="请输入密码"
+                type="password"
+                @keydown.enter="authMode === 'login' ? doLogin() : doRegister()"
+            />
           </div>
 
           <div class="panel-actions" style="margin-top: 14px;">
@@ -658,6 +688,7 @@ import BoardNav from './components/BoardNav.vue'
 import ItemList from './components/ItemList.vue'
 import SideBar from './components/SideBar.vue'
 import AiChatWidget from './components/AiChatWidget.vue'
+import ChatPage from './components/ChatPage.vue'
 
 import {
   register,
@@ -679,7 +710,8 @@ import {
   putOnShelfItem,
   payOrder,
   cancelOrder,
-  uploadImage
+  uploadImage,
+  openChatForItem
 } from './api'
 
 const token = ref(localStorage.getItem('token') || '')
@@ -687,9 +719,13 @@ const q = ref('')
 const status = ref('')
 const showAuthDialog = ref(false)
 const currentView = ref('home')
+const chatInitialConversationId = ref(null)
 
 const authMode = ref('login')
-const auth = reactive({ username: '', password: '' })
+const auth = reactive({
+  username: '',
+  password: ''
+})
 const authError = ref('')
 
 const form = reactive({
@@ -705,7 +741,6 @@ const editingItemId = ref(null)
 const postImages = ref([])
 const coverIndex = ref(0)
 const uploading = ref(false)
-
 const postError = ref('')
 
 const items = ref([])
@@ -754,21 +789,37 @@ const boards = [
   { key: 'sports', name: '运动' }
 ]
 
-const boardsMap = boards.reduce((m, x) => {
-  m[x.key] = x.name
+const boardsMap = boards.reduce((m, item) => {
+  m[item.key] = item.name
   return m
 }, {})
 
 const activeBoard = ref('all')
 
-const listTitle = computed(() => {
-  const b = boardsMap[activeBoard.value] || '全部'
-  const s = status.value ? (status.value === 'AVAILABLE' ? '在售' : '已售') : '全部'
-  return `帖子列表 - ${b}（${s}）`
+const statusText = computed(() => {
+  if (!status.value) return '全部'
+  if (status.value === 'AVAILABLE') return '在售'
+  if (status.value === 'SOLD') return '已售'
+  if (status.value === 'RESERVED') return '已锁定'
+  if (status.value === 'OFF_SHELF') return '已下架'
+  return status.value
 })
 
+const listTitle = computed(() => {
+  const b = boardsMap[activeBoard.value] || '全部'
+  return `帖子列表 - ${b}（${statusText.value}）`
+})
+
+function getItemCover(item) {
+  if (!item) return ''
+  if (item.coverImageUrl) return item.coverImageUrl
+  if (Array.isArray(item.imageUrls) && item.imageUrls.length > 0) return item.imageUrls[0]
+  return ''
+}
+
 function setToken(res) {
-  if (!res.success) throw new Error(res.message || 'auth failed')
+  if (!res.success) throw new Error(res.message || '认证失败')
+
   localStorage.setItem('token', res.data.token)
   token.value = res.data.token
 }
@@ -796,8 +847,6 @@ function resetPostForm() {
 }
 
 function cancelEdit() {
-  isEditMode.value = false
-  editingItemId.value = null
   resetPostForm()
   currentView.value = 'myItems'
 }
@@ -815,6 +864,7 @@ function closeAuthDialog() {
 
 function requireLogin(message = '请先登录后再继续操作') {
   if (token.value) return true
+
   openAuthDialog('login', message)
   return false
 }
@@ -825,6 +875,7 @@ async function doRegister() {
   try {
     setToken(await register(auth.username, auth.password))
     closeAuthDialog()
+    auth.password = ''
     currentView.value = 'home'
     await loadInitialData()
   } catch (e) {
@@ -838,6 +889,7 @@ async function doLogin() {
   try {
     setToken(await login(auth.username, auth.password))
     closeAuthDialog()
+    auth.password = ''
     currentView.value = 'home'
     await loadInitialData()
   } catch (e) {
@@ -848,31 +900,43 @@ async function doLogin() {
 function logout() {
   localStorage.removeItem('token')
   token.value = ''
+
   recs.value = []
   orders.value = []
   salesOrders.value = []
   myItems.value = []
+  chatInitialConversationId.value = null
+
   fillProfile(null)
+
   currentView.value = 'home'
+  closeDetail()
+  showPayDialog.value = false
+
   loadItems()
 }
 
 function selectBoard(key) {
   activeBoard.value = key
+  currentView.value = 'home'
   loadItems()
 }
 
 function quickFilter(s) {
   status.value = s
+  currentView.value = 'home'
   loadItems()
 }
 
 function handleSearch() {
+  currentView.value = 'home'
   loadItems()
 }
 
 function handleGoPost() {
   if (!requireLogin('请先登录后再发布商品')) return
+
+  resetPostForm()
   currentView.value = 'post'
 }
 
@@ -887,18 +951,17 @@ async function loadItems() {
     })
 
     if (!res.success) throw new Error(res.message || '加载商品失败')
-    items.value = res.data
+
+    items.value = res.data || []
   } catch (e) {
-    listError.value = e.message
+    listError.value = e.message || '加载商品失败'
   }
 }
 
 async function createPost() {
   postError.value = ''
 
-  if (!requireLogin('请先登录后再发布商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再发布商品')) return
 
   try {
     const res = await createItem({
@@ -910,22 +973,20 @@ async function createPost() {
       coverIndex: postImages.value.length ? coverIndex.value : 0
     })
 
-    if (!res.success) throw new Error(res.message || 'create failed')
+    if (!res.success) throw new Error(res.message || '发布失败')
 
     resetPostForm()
-    await loadItems()
+    await Promise.allSettled([loadItems(), loadRecs()])
     currentView.value = 'home'
   } catch (e) {
-    postError.value = e.message
+    postError.value = e.message || '发布失败'
   }
 }
 
 async function updatePost() {
   postError.value = ''
 
-  if (!requireLogin('请先登录后再编辑商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再编辑商品')) return
 
   try {
     const res = await updateItem(editingItemId.value, {
@@ -940,30 +1001,27 @@ async function updatePost() {
     if (!res.success) throw new Error(res.message || '更新失败')
 
     resetPostForm()
-    await loadMyItems()
-    await loadItems()
+    await Promise.allSettled([loadMyItems(), loadItems(), loadRecs()])
     currentView.value = 'myItems'
   } catch (e) {
-    postError.value = e.message
+    postError.value = e.message || '更新失败'
   }
 }
 
 async function doDeleteItem(id) {
   myItemsError.value = ''
 
-  if (!requireLogin('请先登录后再删除商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再删除商品')) return
+
+  if (!window.confirm('确定要删除该商品吗？')) return
 
   try {
     const res = await deleteItem(id)
     if (!res.success) throw new Error(res.message || '删除失败')
 
-    myItems.value = myItems.value.filter(item => item.id !== id)
-    await loadMyItems()
-    await loadItems()
+    await Promise.allSettled([loadMyItems(), loadItems(), loadRecs()])
   } catch (e) {
-    myItemsError.value = e.message
+    myItemsError.value = e.message || '删除失败'
   }
 }
 
@@ -972,21 +1030,59 @@ async function openDetail(id) {
 
   try {
     const res = await getItemDetail(id)
-    if (!res.success) throw new Error(res.message || 'load failed')
+
+    if (!res.success) throw new Error(res.message || '加载详情失败')
+
     detail.value = res.data
     showDetail.value = true
   } catch (e) {
-    detailErr.value = e.message
+    detailErr.value = e.message || '加载详情失败'
+  }
+}
+
+function closeDetail() {
+  showDetail.value = false
+  detail.value = null
+  detailErr.value = ''
+}
+
+async function openChatByItem(item) {
+  detailErr.value = ''
+
+  if (!item?.id) return
+
+  if (!requireLogin('请先登录后再联系卖家')) return
+
+  if (!profile.id) {
+    await loadProfile()
+  }
+
+  if (item?.seller?.id === profile.id) {
+    detailErr.value = '不能和自己聊天'
+    return
+  }
+
+  try {
+    const res = await openChatForItem(item.id)
+
+    if (!res.success) {
+      throw new Error(res.message || '打开聊天失败')
+    }
+
+    chatInitialConversationId.value = res.data.id
+    closeDetail()
+    currentView.value = 'chats'
+  } catch (e) {
+    detailErr.value = e.message || '打开聊天失败'
   }
 }
 
 async function doCreateOrder(itemId) {
   if (!itemId) return
+
   detailErr.value = ''
 
-  if (!requireLogin('请先登录后再下单')) {
-    return
-  }
+  if (!requireLogin('请先登录后再下单')) return
 
   try {
     const res = await createOrder(itemId)
@@ -995,20 +1091,16 @@ async function doCreateOrder(itemId) {
       throw new Error(res.message || '下单失败')
     }
 
-    showDetail.value = false
+    closeDetail()
     currentView.value = 'orders'
 
     await Promise.allSettled([
-      loadOrders(),
-      loadSalesOrders(),
-      loadItems()
+      refreshOrders(),
+      loadItems(),
+      loadRecs()
     ])
   } catch (e) {
     detailErr.value = e.message || '下单失败'
-
-    // 关键修改：
-    // 如果下单失败，说明商品可能已经被别人下单、售出、下架或删除。
-    // 此时立即刷新商品详情和商品列表，避免前端继续显示旧状态。
     await refreshItemAfterOrderFailed(itemId)
   }
 }
@@ -1024,19 +1116,7 @@ async function refreshItemAfterOrderFailed(itemId) {
     console.warn('刷新商品详情失败：', e)
   }
 
-  try {
-    await loadItems()
-  } catch (e) {
-    console.warn('刷新商品列表失败：', e)
-  }
-
-  if (token.value) {
-    try {
-      await loadRecs()
-    } catch (e) {
-      console.warn('刷新推荐失败：', e)
-    }
-  }
+  await Promise.allSettled([loadItems(), loadRecs()])
 }
 
 async function loadRecs() {
@@ -1044,15 +1124,16 @@ async function loadRecs() {
 
   if (!token.value) {
     recs.value = []
-    recErr.value = '登录后可查看个性化推荐'
+    recErr.value = ''
     return
   }
 
   try {
     const res = await getRecommendations(8)
-    if (!res.success) throw new Error(res.message || 'reco failed')
 
-    recs.value = res.data.filter(item => item.status !== 'OFF_SHELF' && !item.deleted)
+    if (!res.success) throw new Error(res.message || '推荐加载失败')
+
+    recs.value = (res.data || []).filter(item => item.status !== 'OFF_SHELF' && !item.deleted)
 
     if (recs.value.length === 0) {
       recErr.value = '暂无推荐商品，请多浏览几个商品'
@@ -1062,19 +1143,41 @@ async function loadRecs() {
   }
 }
 
+async function refreshOrders() {
+  if (!requireLogin('请先登录后再查看订单')) return
+
+  await Promise.allSettled([loadOrders(), loadSalesOrders()])
+}
+
 async function loadOrders() {
   orderError.value = ''
 
-  if (!requireLogin('请先登录后再查看订单')) {
-    return
-  }
+  if (!token.value) return
 
   try {
     const res = await listMyOrders()
+
     if (!res.success) throw new Error(res.message || '订单加载失败')
+
     orders.value = res.data || []
   } catch (e) {
-    orderError.value = e.message
+    orderError.value = e.message || '订单加载失败'
+  }
+}
+
+async function loadSalesOrders() {
+  salesOrderError.value = ''
+
+  if (!token.value) return
+
+  try {
+    const res = await listMySalesOrders()
+
+    if (!res.success) throw new Error(res.message || '卖出订单加载失败')
+
+    salesOrders.value = res.data || []
+  } catch (e) {
+    salesOrderError.value = e.message || '卖出订单加载失败'
   }
 }
 
@@ -1087,19 +1190,22 @@ function openPayDialog(order) {
 async function doPayOrder(orderId) {
   payMsg.value = ''
 
-  if (!requireLogin('请先登录后再支付订单')) {
-    return
-  }
+  if (!requireLogin('请先登录后再支付订单')) return
 
   try {
     const res = await payOrder(orderId)
+
     if (!res.success) throw new Error(res.message || '支付确认失败')
 
     payMsg.value = '支付成功，订单已完成'
-    await loadOrders()
-    await loadItems()
+
+    await Promise.allSettled([
+      refreshOrders(),
+      loadItems(),
+      loadRecs()
+    ])
   } catch (e) {
-    payMsg.value = e.message
+    payMsg.value = e.message || '支付确认失败'
   }
 }
 
@@ -1107,17 +1213,20 @@ async function doCancelOrder(orderId) {
   payMsg.value = ''
   orderError.value = ''
 
-  if (!requireLogin('请先登录后再取消订单')) {
-    return
-  }
+  if (!requireLogin('请先登录后再取消订单')) return
 
   try {
     const res = await cancelOrder(orderId)
+
     if (!res.success) throw new Error(res.message || '取消订单失败')
 
     showPayDialog.value = false
-    await loadOrders()
-    await loadItems()
+
+    await Promise.allSettled([
+      refreshOrders(),
+      loadItems(),
+      loadRecs()
+    ])
   } catch (e) {
     const msg = e.message || '取消订单失败'
     payMsg.value = msg
@@ -1129,25 +1238,23 @@ async function loadProfile() {
   profileMsg.value = ''
   paymentMsg.value = ''
 
-  if (!requireLogin('请先登录后再查看个人中心')) {
-    return
-  }
+  if (!token.value) return
 
   try {
     const res = await getMyProfile()
+
     if (!res.success) throw new Error(res.message || '个人信息加载失败')
+
     fillProfile(res.data)
   } catch (e) {
-    profileMsg.value = e.message
+    profileMsg.value = e.message || '个人信息加载失败'
   }
 }
 
 async function saveProfile() {
   profileMsg.value = ''
 
-  if (!requireLogin('请先登录后再保存资料')) {
-    return
-  }
+  if (!requireLogin('请先登录后再保存资料')) return
 
   try {
     const res = await updateMyProfile({
@@ -1161,16 +1268,14 @@ async function saveProfile() {
     fillProfile(res.data)
     profileMsg.value = '个人资料已保存'
   } catch (e) {
-    profileMsg.value = e.message
+    profileMsg.value = e.message || '保存失败'
   }
 }
 
 async function savePayment() {
   paymentMsg.value = ''
 
-  if (!requireLogin('请先登录后再保存收款码')) {
-    return
-  }
+  if (!requireLogin('请先登录后再保存收款码')) return
 
   try {
     const res = await updateMyPayment({
@@ -1182,7 +1287,7 @@ async function savePayment() {
     fillProfile(res.data)
     paymentMsg.value = '收款码已保存'
   } catch (e) {
-    paymentMsg.value = e.message
+    paymentMsg.value = e.message || '保存收款码失败'
   }
 }
 
@@ -1200,83 +1305,62 @@ async function loadInitialData() {
   }
 }
 
-async function loadSalesOrders() {
-  salesOrderError.value = ''
-
-  if (!requireLogin('请先登录后再查看卖出订单')) {
-    return
-  }
-
-  try {
-    const res = await listMySalesOrders()
-    if (!res.success) throw new Error(res.message || '卖出订单加载失败')
-    salesOrders.value = res.data || []
-  } catch (e) {
-    salesOrderError.value = e.message
-  }
-}
-
 async function loadMyItems() {
   myItemsError.value = ''
 
-  if (!requireLogin('请先登录后再查看我的发布')) {
-    return
-  }
+  if (!token.value) return
 
   try {
     const res = await listMyItems()
+
     if (!res.success) throw new Error(res.message || '我的发布加载失败')
+
     myItems.value = res.data || []
   } catch (e) {
-    myItemsError.value = e.message
+    myItemsError.value = e.message || '我的发布加载失败'
   }
 }
 
 async function doPutOnShelf(id) {
   myItemsError.value = ''
 
-  if (!requireLogin('请先登录后再重新上架商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再重新上架商品')) return
 
   try {
     const res = await putOnShelfItem(id)
+
     if (!res.success) throw new Error(res.message || '重新上架失败')
 
-    await loadMyItems()
-    await loadItems()
+    await Promise.allSettled([loadMyItems(), loadItems(), loadRecs()])
   } catch (e) {
-    myItemsError.value = e.message
+    myItemsError.value = e.message || '重新上架失败'
   }
 }
 
 async function doOffShelf(id) {
   myItemsError.value = ''
 
-  if (!requireLogin('请先登录后再下架商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再下架商品')) return
 
   try {
     const res = await offShelfItem(id)
+
     if (!res.success) throw new Error(res.message || '下架失败')
 
-    await loadMyItems()
-    await loadItems()
+    await Promise.allSettled([loadMyItems(), loadItems(), loadRecs()])
   } catch (e) {
-    myItemsError.value = e.message
+    myItemsError.value = e.message || '下架失败'
   }
 }
 
 async function openEditItem(item) {
   postError.value = ''
 
-  if (!requireLogin('请先登录后再编辑商品')) {
-    return
-  }
+  if (!requireLogin('请先登录后再编辑商品')) return
 
   try {
     const res = await getItemDetail(item.id)
+
     if (!res.success) throw new Error(res.message || '加载商品详情失败')
 
     const full = res.data
@@ -1310,7 +1394,7 @@ function switchView(view) {
     return
   }
 
-  const protectedViews = ['orders', 'profile', 'myItems', 'post']
+  const protectedViews = ['orders', 'profile', 'myItems', 'post', 'chats']
 
   if (protectedViews.includes(view) && !requireLogin('请先登录后再使用该功能')) {
     return
@@ -1318,9 +1402,10 @@ function switchView(view) {
 
   currentView.value = view
 
-  if (view === 'orders') {
-    loadOrders()
-    loadSalesOrders()
+  if (view === 'home') {
+    loadItems()
+  } else if (view === 'orders') {
+    refreshOrders()
   } else if (view === 'profile') {
     loadProfile()
   } else if (view === 'myItems') {
@@ -1334,7 +1419,6 @@ async function handleSelectImages(event) {
   if (!files.length) return
 
   const remain = 3 - postImages.value.length
-  const selected = files.slice(0, remain)
 
   if (remain <= 0) {
     postError.value = '最多只能上传 3 张图片'
@@ -1342,12 +1426,15 @@ async function handleSelectImages(event) {
     return
   }
 
+  const selected = files.slice(0, remain)
+
   uploading.value = true
   postError.value = ''
 
   try {
     for (const file of selected) {
       const res = await uploadImage(file)
+
       if (!res.success) throw new Error(res.message || '图片上传失败')
 
       postImages.value.push({
@@ -1397,6 +1484,7 @@ function getOrderDeadline(order) {
 function getRemainingMs(order) {
   const deadline = getOrderDeadline(order)
   if (!deadline) return 0
+
   return Math.max(0, deadline - nowTs.value)
 }
 
